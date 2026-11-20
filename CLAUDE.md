@@ -8,7 +8,7 @@ Este archivo orienta a Claude Code (claude.ai/code) al trabajar con el código d
 
 ## Arquitectura general
 
-- `aiTicketIt-back/`: **backend monolito** en Node.js con Express. Sirve a ambos lados del front. Está organizado por capas (`routes/`, `controllers/`, `services/`, `repository/`, `models/`, `dto/`, `schemas/`, `errors/`, `tests/`).
+- `aiTicketIt-back/`: **backend monolito** en Node.js con Express. Sirve a ambos lados del front. Está organizado por capas (`routes/`, `controllers/`, `services/`, `repository/`, `models/`, `dto/`, `schemas/`, `errors/`, `tests/`). La **persistencia es en memoria** (lo exige el enunciado): los datos viven en `repository/`, se cargan desde un seed al iniciar y se pierden al reiniciar. No hay base de datos externa.
 - `aiTicketIt-front/`: **un único front** en Expo (React Native + TypeScript, con expo-router y rutas basadas en archivos en `src/app/`). Contiene **tanto la página para organizadores como la página para compradores**.
 - `Diseño de AI Ticket It/`: wireframes dibujados a mano (`DisenoTpCompradores.png`, `DisenoToOrganizadores.png`). Son la especificación principal. Leerlos antes de construir UI o modelos de dominio.
 
@@ -19,16 +19,25 @@ Los textos de la interfaz y el lenguaje del dominio están en español. Mantener
 ```bash
 # Backend
 cd aiTicketIt-back
-node index.js
+npm start          # node index.js
+npm test           # node --test (node:test + supertest)
 
 # Front
 cd aiTicketIt-front
 npx expo start
 ```
 
-El backend escucha en el puerto `PORT` (por defecto 3000). Expone `GET /health`, la documentación Swagger en `/docs` (generada con swagger-jsdoc a partir de comentarios `@openapi` en `index.js` y `routes/*.js`) y la especificación en `/docs.json`. `ALLOWED_ORIGINS` (separados por coma) limita CORS; si no se define, se permite cualquier origen. El backend usa ES modules (`"type": "module"`).
+El backend escucha en el puerto `PORT` (por defecto 3000). Expone `GET /health`, la documentación Swagger en `/docs` (generada con swagger-jsdoc a partir de comentarios `@openapi` en `app.js` y `routes/*.js`) y la especificación en `/docs.json`. `ALLOWED_ORIGINS` (separados por coma) limita CORS; si no se define, se permite cualquier origen. El backend usa ES modules (`"type": "module"`). `app.js` arma la app sin escuchar (para supertest) e `index.js` carga el seed y hace `listen`.
 
-Para el front también existen `npm run android`, `npm run ios`, `npm run web` y `npm run lint` (`expo lint`). Todavía no hay tests configurados en ninguno de los dos proyectos.
+**Tests del backend:** `node:test` + `node:assert/strict` + supertest. Unitarios en `tests/unit/`, de integración en `tests/integration/` (un archivo por historia). Cada test arranca con `reiniciarEstado()` (`tests/helpers/estado.js`). La validación de entrada usa zod en `schemas/` y el middleware `validar(schema)`; los errores salen siempre como `{ error: { codigo, mensaje, campos? } }` (subclases de `ErrorDeDominio` en `errors/`).
+
+**Cuentas de ejemplo:** contraseña de desarrollo `Entradas2026` para `sofia.gomez@correo.com` (comprador) y `produccion@latrama.com.ar`, `hola@clubdelchiste.com.ar`, `contacto@lumbre.com.ar` (organizadores). El seed guarda solo hashes scrypt.
+
+Para el front también existen `npm run android`, `npm run ios`, `npm run web`, `npm run lint` (`expo lint`) y `npx tsc --noEmit`. El front no tiene tests automáticos. `EXPO_PUBLIC_API_URL` define la URL del backend (por defecto `http://localhost:3000`; en un dispositivo físico, la IP de la máquina en la red local).
+
+**Estructura del front:** `src/app/(compradores)/` es la app de compradores (`/` = Ingreso, `/explorar`) y `src/app/organizadores/` el panel (`/organizadores` = Ingreso, `/organizadores/mis-eventos`). Además: `src/api/` (cliente HTTP y llamadas), `src/sesion/` (`SesionProvider` y almacenamiento de la sesión: secure-store en nativo, localStorage en web), `src/theme/tokens.ts` (tokens del design system) y `src/components/ds/` (componentes del design system).
+
+**Convenciones de sesión (FR-015):** todo endpoint que necesite un usuario usa el middleware `requiereSesion(tipo)` (`"comprador"` u `"organizador"`), que deja `req.sesion = { tipo, usuario, token }`. Toda pantalla interna nueva va dentro del `Stack.Protected` de su lado (`(compradores)/_layout.tsx` u `organizadores/_layout.tsx`), y las llamadas autenticadas pasan `token` y `tipo` a `pedir()` para que un 401 `SESION_INVALIDA` borre la sesión.
 
 ## Branches
 
