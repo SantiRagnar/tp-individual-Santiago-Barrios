@@ -1,0 +1,9 @@
+{
+    "permitions": {
+        "deny": [
+            "Read(./env)", //Evita que claudio lea el .env
+            "Read(~/.ssh/**"
+        ]
+    },
+    "sandbox": { "enabled": true }
+}

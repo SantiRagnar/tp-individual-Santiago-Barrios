@@ -59,6 +59,10 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Campos **Email** (placeholder `nombre@correo.com`) y **Contraseña**.
 - Botón primario **Ingresar**; separador "o"; secundarios **Ingresar con Google** e **Ingresar con Apple**.
 - Link "¿No tenés cuenta? **Registrate**" (la pantalla de registro no está diseñada).
+- Errores de campo: "Ingresá tu email", "Ingresá un email válido", "Ingresá tu contraseña". Con algún error, **Ingresar** queda deshabilitado con la nota "Revisá los campos marcados para ingresar."
+- Credenciales incorrectas (email inexistente, contraseña incorrecta o cuenta de organizador): "El email o la contraseña no son correctos."
+- Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato."
+- "o", **Ingresar con Google**, **Ingresar con Apple** y **Registrate** se ven deshabilitados hasta que existan sus flujos.
 
 ### 02 · Explorar
 - Encabezado: Avatar con iniciales (botón → Menú de perfil), "Hola, {nombre}" y "¿Qué querés ver?".
@@ -144,6 +148,7 @@ Navegación: Ingreso → Mis eventos. DesktopNav en todas las pantallas internas
 ### 01 · Ingreso
 - Tarjeta con BrandMark compacto, "AI Ticket It", "Panel de organizadores".
 - Campos **Email** y **Contraseña**, botón **Ingresar**. Sin Google/Apple ni registro.
+- Mismos errores y mensajes que Compradores 01 · Ingreso. Enter envía. En pantallas chicas la tarjeta se adapta al ancho.
 
 ### 02 · Mis eventos
 - Título "Mis eventos" + contador "N eventos" + botón primario **Crear evento**.
