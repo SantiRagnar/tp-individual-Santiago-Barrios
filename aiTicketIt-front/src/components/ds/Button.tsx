@@ -3,13 +3,18 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from '
 
 import { color, opacidadDeshabilitado, radius, size, space, tinte, type } from '@/theme/tokens';
 
-type Variante = 'primary' | 'secondary' | 'cta';
+type Variante = 'primary' | 'secondary' | 'cta' | 'ghost';
 
 type Props = {
   children: string;
   onPress?: () => void;
   variante?: Variante;
   disabled?: boolean;
+  /**
+   * Se ve deshabilitado (45%, `aria-disabled`) pero sigue recibiendo foco y toque: para el primario de un
+   * formulario con errores, que al tocarlo muestra todos los errores (design-system.md § Estados).
+   */
+  pareceDeshabilitado?: boolean;
   /** Mientras se envía: deshabilitado y con indicador. */
   enviando?: boolean;
   icono?: ReactNode;
@@ -27,13 +32,16 @@ export function Button({
   onPress,
   variante = 'primary',
   disabled = false,
+  pareceDeshabilitado = false,
   enviando = false,
   icono,
   compacto = false,
   accessibilityHint,
 }: Props) {
   const inactivo = disabled || enviando;
-  const acento = variante !== 'secondary';
+  const atenuado = inactivo || pareceDeshabilitado;
+  const acento = variante !== 'secondary' && variante !== 'ghost';
+  const borde = variante === 'ghost' ? 'transparent' : acento ? color.accent : color.divider;
   const alto = compacto ? size.controlHeight : variante === 'cta' ? size.ctaHeight : size.touchTarget;
 
   return (
@@ -41,18 +49,18 @@ export function Button({
       onPress={onPress}
       disabled={inactivo}
       accessibilityRole="button"
-      accessibilityState={{ disabled: inactivo, busy: enviando }}
+      accessibilityState={{ disabled: atenuado, busy: enviando }}
       accessibilityHint={accessibilityHint}
       style={({ pressed, hovered, focused }: { pressed: boolean; hovered?: boolean; focused?: boolean }) => [
         styles.base,
         {
           minHeight: alto,
-          borderColor: acento ? color.accent : color.divider,
-          opacity: inactivo ? opacidadDeshabilitado : 1,
+          borderColor: borde,
+          opacity: atenuado ? opacidadDeshabilitado : 1,
         },
         variante === 'cta' && styles.anchoCompleto,
-        !inactivo && hovered && { backgroundColor: acento ? tinte.acentoHover : tinte.textoHover },
-        !inactivo && pressed && { backgroundColor: acento ? tinte.acentoPresionado : tinte.textoPresionado },
+        !atenuado && hovered && { backgroundColor: acento ? tinte.acentoHover : tinte.textoHover },
+        !atenuado && pressed && { backgroundColor: acento ? tinte.acentoPresionado : tinte.textoPresionado },
         focused && Platform.OS === 'web' && styles.foco,
       ]}>
       <View style={styles.contenido}>

@@ -2,12 +2,15 @@ export type TipoDeCuenta = 'comprador' | 'organizador';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-/** Error que devuelve la API ({ error: { codigo, mensaje } }) o una falla de red (codigo "RED"). */
+export type ErrorDeCampo = { campo: string; mensaje: string };
+
+/** Error que devuelve la API ({ error: { codigo, mensaje, campos? } }) o una falla de red (codigo "RED"). */
 export class ErrorApi extends Error {
   constructor(
     public readonly codigo: string,
     mensaje: string,
     public readonly status?: number,
+    public readonly campos: ErrorDeCampo[] = [],
   ) {
     super(mensaje);
     this.name = 'ErrorApi';
@@ -22,16 +25,21 @@ export function configurarAlInvalidarSesion(callback: ((tipo: TipoDeCuenta) => v
 }
 
 type Opciones = {
-  metodo?: 'GET' | 'POST' | 'DELETE';
+  metodo?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** JSON (se serializa) o un Blob, que viaja crudo con su propio Content-Type (imagen del evento). */
   body?: unknown;
   token?: string;
   /** Tipo de cuenta del token: si la API responde SESION_INVALIDA, se avisa para borrar esa sesión. */
   tipo?: TipoDeCuenta;
+  /** Content-Type de un body binario, si el Blob no lo trae (en nativo, fetch(uri).blob() puede venir sin tipo). */
+  tipoContenido?: string;
 };
 
-export async function pedir<T>(ruta: string, { metodo = 'GET', body, token, tipo }: Opciones = {}): Promise<T> {
+export async function pedir<T>(ruta: string, { metodo = 'GET', body, token, tipo, tipoContenido }: Opciones = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const esBinario = typeof Blob !== 'undefined' && body instanceof Blob;
+  if (esBinario) headers['Content-Type'] = tipoContenido ?? body.type;
+  else if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let respuesta: Response;
@@ -39,7 +47,7 @@ export async function pedir<T>(ruta: string, { metodo = 'GET', body, token, tipo
     respuesta = await fetch(`${API_URL}${ruta}`, {
       method: metodo,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : esBinario ? body : JSON.stringify(body),
     });
   } catch {
     throw new ErrorApi('RED', 'No pudimos conectarnos.');
@@ -52,7 +60,7 @@ export async function pedir<T>(ruta: string, { metodo = 'GET', body, token, tipo
     const codigo = datos?.error?.codigo ?? 'ERROR_INTERNO';
     const mensaje = datos?.error?.mensaje ?? 'Ocurrió un error inesperado.';
     if (codigo === 'SESION_INVALIDA' && token && tipo) alInvalidarSesion?.(tipo);
-    throw new ErrorApi(codigo, mensaje, respuesta.status);
+    throw new ErrorApi(codigo, mensaje, respuesta.status, datos?.error?.campos ?? []);
   }
   return datos as T;
 }

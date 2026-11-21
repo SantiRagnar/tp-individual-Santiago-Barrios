@@ -158,7 +158,7 @@ Elevación = borde fino + oscuridad ambiente. No apilar sombras. Bordes punteado
 - Foco de teclado: `outline: 2px solid color-accent; outline-offset: 2px`. Nunca el anillo azul del navegador.
 - Lo elegido se marca en acento + `shadow-sm`; lo activo con `aria-pressed` / `aria-current`.
 - **Toda acción irreversible (cancelar compra) pasa por Dialog** con la consecuencia escrita.
-- **Error de formulario:** `aria-invalid="true"` (borde `accent-400`) + `.field-error` debajo con `warning-circle` y la frase de qué falta, en 12px `accent-300`. No hay rojo. El botón de enviar queda `disabled` (no escondido) con una nota de qué revisar. Validar mientras se escribe.
+- **Error de formulario:** `aria-invalid="true"` (borde `accent-400`) + `.field-error` debajo con `warning-circle` y la frase de qué falta, en 12px `accent-300`. No hay rojo. El botón de enviar queda deshabilitado (no escondido) con una nota de qué revisar. Validar mientras se escribe. En formularios largos (Crear/Editar evento), el error de un campo aparece cuando ese campo ya se tocó; el botón usa `aria-disabled` (45%, sigue recibiendo foco y toque, nunca envía) y, si se lo toca, muestra los errores de todos los campos. La nota aparece solo con algún error visible.
 
 ## Estructura de pantalla
 
@@ -180,6 +180,7 @@ Elevación = borde fino + oscuridad ambiente. No apilar sombras. Bordes punteado
 - Label arriba (12px, `color-text-label`), nunca como placeholder. Input/select/textarea (textarea ≥ 90px) con fondo `surface`, borde `divider`, foco en acento. Mobile 44px; desktop 36px.
 - `search`: lupa + input de 44px, placeholder "Buscar evento, sala u organizador".
 - `dropzone` para la imagen del evento: borde punteado, dice formato y medida ("JPG o PNG, 1600×900").
+- Con imagen cargada, la dropzone muestra la miniatura + ghost "Cambiar imagen". Errores: "La imagen tiene que ser JPG o PNG", "La imagen no puede pesar más de 5 MB", "No pudimos subir la imagen. Probá de nuevo." (se conserva la imagen anterior).
 - Archivos cargados como `tag-neutral` con ícono (video, image) + ghost "Agregar foto o video".
 - Error: ver "Estados e interacción". Mensajes: "Poné un nombre al evento", "Elegí fecha y hora", "La fecha tiene que ser futura", "Indicá dónde se hace el evento". Textos con límite: contador "0/500".
 
@@ -233,7 +234,8 @@ Etiqueta chica (`radius-tag`, 11px). Mapeo fijo, igual en las dos apps:
   - Cupo entero ≥ 1: "Indicá el cupo" / "El cupo tiene que ser 1 o más".
   - Precio ≥ $ 0 (0 = entrada gratuita): "Indicá el precio" / "El precio no puede ser negativo".
   - Sin ningún tipo: "Agregá al menos un tipo de entrada", arriba de la grilla.
-- Mientras haya un error, "Publicar evento" queda `disabled` con la nota "Revisá los campos marcados para publicar." **"Guardar borrador" siempre está habilitado.**
+- Mientras haya un error, "Publicar evento" queda deshabilitado (ver "Estados e interacción") con la nota "Revisá los campos marcados para publicar." cuando hay errores visibles. **"Guardar borrador" siempre está habilitado.**
+- Tipo con ventas (Editar evento): quitar deshabilitado al 45% con la ayuda "Tiene ventas: no se puede quitar" y "N vendidas" en muted debajo; el cupo no puede bajar de las vendidas: "El cupo no puede ser menor a las vendidas (N)".
 
 ### RadioCard
 - Opción sobre `input type="radio"` en tarjeta `surface` ≥ 56px.

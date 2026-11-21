@@ -1,3 +1,4 @@
+import { Link, usePathname } from 'expo-router';
 import { Ticket } from 'phosphor-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -9,8 +10,12 @@ type Props = {
   compania: string;
 };
 
-/** Header de las pantallas de Organizadores: marca, link "Mis eventos" (actual) y compañía + avatar. */
+const MIS_EVENTOS = '/organizadores/mis-eventos';
+
+/** Header de las pantallas de Organizadores: marca, link "Mis eventos" y compañía + avatar. */
 export function DesktopNav({ compania }: Props) {
+  const actual = usePathname() === MIS_EVENTOS;
+
   return (
     <View style={styles.nav} accessibilityRole="header">
       <View style={styles.izquierda}>
@@ -18,9 +23,9 @@ export function DesktopNav({ compania }: Props) {
           <Ticket size={iconSize.barra} color={color.accent} weight="fill" />
           <Text style={[type.h5, { color: color.text }]}>AI Ticket It</Text>
         </View>
-        <Text style={[type.bodySm, { color: color.accent }]} accessibilityRole="link" aria-current="page">
-          Mis eventos
-        </Text>
+        <Link href={MIS_EVENTOS} aria-current={actual ? 'page' : undefined}>
+          <Text style={[type.bodySm, { color: actual ? color.accent : color.text }]}>Mis eventos</Text>
+        </Link>
       </View>
       <View style={styles.derecha}>
         <Text style={[type.bodySm, { color: color.text }]} numberOfLines={1}>

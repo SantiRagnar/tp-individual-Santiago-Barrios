@@ -176,6 +176,16 @@ Dos columnas: formulario + vista previa de 400px.
 > El wireframe original menciona "tipo de material multimedia (p. ej. Pantalla)"; en el diseño final quedó como carga de fotos/videos.
 > "Editar evento" reutiliza este mismo formulario (no tiene pantalla propia).
 
+**Imagen cargada:** la dropzone muestra la miniatura + ghost **Cambiar imagen**. Errores debajo: "La imagen tiene que ser JPG o PNG" · "La imagen no puede pesar más de 5 MB" · "No pudimos subir la imagen. Probá de nuevo." (se conserva la imagen anterior).
+
+**Cuándo se ven los errores (feature 002, FR-013):** cada error aparece debajo de su campo cuando ese campo ya se tocó. **Publicar evento** se ve deshabilitado (45%) mientras haya cualquier error y nunca envía, pero sigue recibiendo foco y toque: al tocarlo aparecen los errores de todos los campos a la vez. La nota bajo el botón aparece solo cuando hay al menos un error visible (con el formulario recién abierto, el botón se ve deshabilitado y sin nota).
+
+**Editar evento (feature 002):** mismo formulario, título "Editar evento" y los datos cargados. Volver lleva al Detalle.
+- Evento **Borrador**: mismas acciones que Crear evento (**Publicar evento** + **Guardar borrador**).
+- Evento **Publicado**: primario **Guardar cambios** (mismas validaciones que publicar) y sin **Guardar borrador**; la nota dice "…para guardar." en lugar de "…para publicar.". Un Publicado no vuelve a Borrador.
+- Tipo de entrada **con ventas**: botón quitar deshabilitado (45%) con la ayuda "Tiene ventas: no se puede quitar" y, debajo de la tarjeta, "N vendidas" en muted. Su cupo no puede quedar por debajo de las vendidas: "El cupo no puede ser menor a las vendidas (N)". Nombre y precio se pueden cambiar.
+- Evento **Finalizado**: no se edita (el Detalle no muestra **Editar evento**).
+
 ### 04 · Detalle del evento (disponibilidad y ventas)
 - Volver; título del evento, "{fecha corta} · {sala}", Tag de estado.
 - Acciones: **Editar evento** y **Consultas del evento {cant no leídas}**.
@@ -184,6 +194,8 @@ Dos columnas: formulario + vista previa de 400px.
 - **Ventas:** chips de filtro con contador — Todas, Confirmadas, Pendientes, Utilizadas, Canceladas, Reembolsadas.
 - DataTable con columnas **Número, Comprador, Entradas, Estado, Medio de pago, Monto, Acciones**. Acciones: **Marcar utilizada** (solo Confirmadas) y botón de chat (→ Consultas en esa conversación).
 - Vacío: "No hay ventas con este estado."
+
+> **Versión mínima (feature 002):** Volver (→ Mis eventos), título ("Nombre del evento" si falta), "{fecha corta} · {sala}" ("Fecha a definir" / "Ubicación"), Tag de estado, **Editar evento** (secundario; no se muestra si está Finalizado) y **Consultas del evento** (secundario, deshabilitado al 45%, sin contador). Disponibilidad, Recaudado y Ventas llegan con su propia feature. Un evento inexistente o de otra compañía muestra "No encontramos el evento." + link a Mis eventos.
 
 ### 05 · Consultas del evento
 - Volver; "Consultas del evento" + nombre del evento.

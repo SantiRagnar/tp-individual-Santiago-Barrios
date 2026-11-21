@@ -41,3 +41,36 @@ describe("/docs.json", () => {
     assert.equal(body.components.securitySchemes.bearer.scheme, "bearer");
   });
 });
+
+// Debe coincidir con specs/002-eventos-organizador/contracts/eventos.openapi.yaml (Principio IV).
+const ESPERADO_EVENTOS = {
+  "/organizadores/eventos": { get: ["200", "401"], post: ["201", "400", "401"] },
+  "/organizadores/eventos/{id}": { get: ["200", "401", "404"], put: ["200", "400", "401", "404", "409"] },
+  "/organizadores/imagenes": { post: ["201", "401", "413", "415"] },
+  "/imagenes/{id}": { get: ["200", "404"] },
+};
+
+describe("/docs.json — eventos e imágenes (feature 002)", () => {
+  it("documenta los endpoints con sus métodos y respuestas", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const [ruta, metodos] of Object.entries(ESPERADO_EVENTOS)) {
+      const documentada = body.paths[ruta];
+      assert.ok(documentada, `falta ${ruta}`);
+      const metodosDocumentados = Object.keys(documentada).filter((k) => k !== "parameters");
+      assert.deepEqual(metodosDocumentados.sort(), Object.keys(metodos).sort(), ruta);
+      for (const [metodo, codigos] of Object.entries(metodos)) {
+        assert.deepEqual(Object.keys(documentada[metodo].responses).sort(), codigos, `${metodo.toUpperCase()} ${ruta}`);
+      }
+    }
+  });
+
+  it("define los schemas y respuestas del contrato", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const schema of ["Evento", "EventoResumen", "EventoEntrada", "TipoDeEntrada", "MaterialMultimedia"]) {
+      assert.ok(body.components.schemas[schema], `falta el schema ${schema}`);
+    }
+    for (const respuesta of ["ReglasDeEvento", "EventoNoEncontrado"]) {
+      assert.ok(body.components.responses[respuesta], `falta la respuesta ${respuesta}`);
+    }
+  });
+});

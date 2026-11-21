@@ -17,6 +17,10 @@ export default function OrganizadoresLayout() {
       </Stack.Protected>
       <Stack.Protected guard={!!organizador}>
         <Stack.Screen name="mis-eventos" />
+        {/* `nuevo` antes que `[id]`, para que no se tome como un id (contracts/rutas-front.md). */}
+        <Stack.Screen name="eventos/nuevo" />
+        <Stack.Screen name="eventos/[id]/index" />
+        <Stack.Screen name="eventos/[id]/editar" />
       </Stack.Protected>
     </Stack>
   );

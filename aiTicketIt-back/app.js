@@ -2,6 +2,8 @@ import cors from "cors";
 import express from "express";
 import swaggerDocs from "./swagger.js";
 import { manejadorDeErrores } from "./errors/manejadorDeErrores.js";
+import { crearRouterEventosOrganizador } from "./routes/eventosOrganizador.js";
+import { crearRouterImagenes, crearRouterSubidaDeImagenes } from "./routes/imagenes.js";
 import { crearRouterSesiones } from "./routes/sesiones.js";
 
 const app = express();
@@ -34,6 +36,9 @@ app.get("/health", (req, res) => {
 
 app.use("/compradores/sesiones", crearRouterSesiones("comprador"));
 app.use("/organizadores/sesiones", crearRouterSesiones("organizador"));
+app.use("/organizadores/eventos", crearRouterEventosOrganizador());
+app.use("/organizadores/imagenes", crearRouterSubidaDeImagenes());
+app.use("/imagenes", crearRouterImagenes());
 
 swaggerDocs(app);
 
