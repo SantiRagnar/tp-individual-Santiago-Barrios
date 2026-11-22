@@ -31,6 +31,8 @@ export type Compra = {
   calificacion: { puntaje: number; comentario: string | null; calificadaEn: string } | null;
   acciones: { completarPago: boolean; cancelar: boolean };
   motivoNoCancelable: MotivoNoCancelable | null;
+  /** El chat tiene una respuesta del organizador sin leer (feature 007, FR-023). */
+  consultaNoLeida: boolean;
 };
 
 export type NuevaCompra = {

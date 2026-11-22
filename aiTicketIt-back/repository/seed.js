@@ -371,3 +371,63 @@ export function generarVentasDeEjemplo(eventos, comprasExistentes) {
  * Las vendidas de cada tipo de entrada coinciden con sus compras activas (FR-018 de la feature 005).
  */
 export const comprasSeed = [...comprasBase, ...generarVentasDeEjemplo(eventosSeed, comprasBase)];
+
+// Consultas de ejemplo (specs/007-consultas-chat/data-model.md § Seed, FR-018).
+// Ningún mensaje es anterior a su compra: los de las compras generadas se calculan desde su `creadaEn`.
+const UNA_HORA = 3_600_000;
+
+/** La primera compra generada (por número) de ese comprador en ese evento. */
+function primeraCompraDe(eventoId, compradorId) {
+  return comprasSeed
+    .filter((c) => c.eventoId === eventoId && c.compradorId === compradorId)
+    .sort((a, b) => (a.numero < b.numero ? -1 : 1))[0];
+}
+
+const despuesDe = (compraSeed, horas) => isoArgentina(new Date(compraSeed.creadaEn).getTime() + horas * UNA_HORA);
+const hamletDeCamila = primeraCompraDe("evt-1", "cmp-6");
+const bodasDeJoaquin = primeraCompraDe("evt-3", "cmp-7");
+
+export const consultasSeed = [
+  {
+    // Sofía · Hamlet: el último es de Sofía y La Trama todavía no lo vio (contador 1 en el panel de Hamlet).
+    compraNumero: "A-1042",
+    eventoId: "evt-1",
+    mensajes: [
+      { id: "msj-1", autor: "comprador", texto: "Hola, ¿a qué hora abren la sala?", enviadoEn: "2026-11-07T10:12:00-03:00" },
+      { id: "msj-2", autor: "organizador", texto: "Hola Sofía, abrimos 20:30.", enviadoEn: "2026-11-07T11:40:00-03:00" },
+      { id: "msj-3", autor: "comprador", texto: "¿Se puede entrar con cochecito?", enviadoEn: "2026-11-08T18:05:00-03:00" },
+    ],
+    vistosPorOrganizador: 2,
+    vistosPorComprador: 3,
+  },
+  {
+    // Sofía · Risas: el último es de Club del Chiste y Sofía no lo leyó (punto en Mis compras).
+    compraNumero: "A-1037",
+    eventoId: "evt-2",
+    mensajes: [
+      { id: "msj-4", autor: "comprador", texto: "¿Puedo pagar en la boletería el día de la función?", enviadoEn: "2026-11-06T15:10:00-03:00" },
+      { id: "msj-5", autor: "organizador", texto: "Sí, podés pagar en la boletería hasta una hora antes.", enviadoEn: "2026-11-06T16:30:00-03:00" },
+    ],
+    vistosPorOrganizador: 2,
+    vistosPorComprador: 1,
+  },
+  {
+    // Camila · Hamlet: leída por los dos.
+    compraNumero: hamletDeCamila.numero,
+    eventoId: "evt-1",
+    mensajes: [
+      { id: "msj-6", autor: "comprador", texto: "¿El estacionamiento es del teatro?", enviadoEn: despuesDe(hamletDeCamila, 1) },
+      { id: "msj-7", autor: "organizador", texto: "No, pero hay una playa a media cuadra.", enviadoEn: despuesDe(hamletDeCamila, 5) },
+    ],
+    vistosPorOrganizador: 2,
+    vistosPorComprador: 2,
+  },
+  {
+    // Joaquín · Bodas de sangre: sin responder (contador 1 en el panel de Bodas).
+    compraNumero: bodasDeJoaquin.numero,
+    eventoId: "evt-3",
+    mensajes: [{ id: "msj-8", autor: "comprador", texto: "¿La función dura más de dos horas?", enviadoEn: despuesDe(bodasDeJoaquin, 1) }],
+    vistosPorOrganizador: 0,
+    vistosPorComprador: 1,
+  },
+];

@@ -1,0 +1,297 @@
+openapi: 3.0.0
+info:
+  title: AI Ticket It API — Consultas, chat de la compra (feature 007)
+  version: 1.0.0
+  description: >
+    Se copia a comentarios @openapi. Los paths de comprador van en routes/compras.js (router montado en
+    /compradores/compras con requiereSesion("comprador")) y en un router nuevo routes/consultas.js
+    (montado en /compradores/consultas). Los de organizador van en routes/eventosOrganizador.js
+    (montado en /organizadores/eventos con requiereSesion("organizador")).
+    Reutiliza de las features anteriores: securitySchemes.bearer, schemas.Error, responses.SesionInvalida,
+    responses.EventoNoEncontrado, responses.CompraNoEncontrada y responses.DatosInvalidos.
+    Ningún GET tiene efectos: marcar como leída es PUT …/lectura (research R4). Los mensajes nuevos se
+    obtienen por sondeo con `despuesDe` (research R3).
+
+tags:
+  - name: Consultas (comprador)
+  - name: Consultas (organizador)
+
+paths:
+  # ───────────────────────────── Comprador ─────────────────────────────
+  /compradores/compras/{numero}/mensajes:
+    parameters:
+      - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+    get:
+      tags: [Consultas (comprador)]
+      summary: Mensajes del chat de una compra propia, en orden cronológico
+      description: >
+        Sin `despuesDe` devuelve todos los mensajes. Con `despuesDe` devuelve solo los posteriores a
+        ese mensaje (sondeo, FR-021). Una compra sin mensajes devuelve []. No marca como leída.
+      security: [{ bearer: [] }]
+      parameters:
+        - { name: despuesDe, in: query, schema: { type: string }, example: msj-3, description: "Id del último mensaje que ya tiene el cliente" }
+      responses:
+        "200":
+          description: Mensajes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mensajes]
+                properties:
+                  mensajes: { type: array, items: { $ref: '#/components/schemas/Mensaje' } }
+              example:
+                mensajes:
+                  - { id: msj-1, autor: comprador, texto: "Hola, ¿a qué hora abren la sala?", enviadoEn: "2026-11-07T10:12:00-03:00" }
+                  - { id: msj-2, autor: organizador, texto: "Hola Sofía, abrimos 20:30.", enviadoEn: "2026-11-07T11:40:00-03:00" }
+                  - { id: msj-3, autor: comprador, texto: "¿Se puede entrar con cochecito?", enviadoEn: "2026-11-08T18:05:00-03:00" }
+        "400": { $ref: '#/components/responses/DatosInvalidos' }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404": { $ref: '#/components/responses/CompraNoEncontrada' }
+    post:
+      tags: [Consultas (comprador)]
+      summary: Enviar un mensaje en el chat de una compra propia
+      description: >
+        Con la compra en cualquier estado (FR-004). El texto se recorta; vacío o de más de 1000
+        caracteres → 400. El autor es siempre "comprador" (lo define la sesión).
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuevoMensaje' }
+            example: { texto: "¿Se puede entrar con cochecito?" }
+      responses:
+        "201":
+          description: Mensaje creado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mensaje]
+                properties: { mensaje: { $ref: '#/components/schemas/Mensaje' } }
+        "400": { $ref: '#/components/responses/DatosInvalidos' }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404": { $ref: '#/components/responses/CompraNoEncontrada' }
+
+  /compradores/compras/{numero}/mensajes/lectura:
+    parameters:
+      - { name: numero, in: path, required: true, schema: { type: string }, example: A-1037 }
+    put:
+      tags: [Consultas (comprador)]
+      summary: Marcar el chat de la compra como leído por el comprador (idempotente)
+      description: Se llama al abrir el chat y cuando el sondeo trae mensajes nuevos con el chat abierto (FR-022).
+      security: [{ bearer: [] }]
+      responses:
+        "204": { description: Marcada como leída }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404": { $ref: '#/components/responses/CompraNoEncontrada' }
+
+  /compradores/consultas/no-leidas:
+    get:
+      tags: [Consultas (comprador)]
+      summary: Chats con respuestas del organizador que el comprador todavía no leyó
+      description: >
+        Lo consulta la app cada 3 s para el toast (FR-024, research R9). Una entrada por compra, la del
+        último mensaje más reciente primero. Si no hay ninguno, devuelve [].
+      security: [{ bearer: [] }]
+      responses:
+        "200":
+          description: Consultas no leídas por el comprador
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [consultas]
+                properties:
+                  consultas: { type: array, items: { $ref: '#/components/schemas/ConsultaNoLeida' } }
+              example:
+                consultas:
+                  - numero: A-1037
+                    evento: { id: evt-2, nombre: Risas a Domicilio }
+                    organizador: { nombre: Club del Chiste }
+                    ultimoMensaje: { id: msj-5, autor: organizador, texto: "Sí, podés pagar en la boletería hasta una hora antes.", enviadoEn: "2026-11-06T16:30:00-03:00" }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+
+  # ──────────────────────────── Organizador ────────────────────────────
+  /organizadores/eventos/{id}/consultas:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+    get:
+      tags: [Consultas (organizador)]
+      summary: Conversaciones del evento (solo compras con mensajes) y cantidad de no leídas
+      description: >
+        Ordenadas por el último mensaje, la más reciente primero (FR-010). `noLeidas` alimenta el
+        contador de "Consultas del evento" (FR-009, FR-017). Un evento ajeno responde igual que uno
+        inexistente (FR-014). No marca nada como leído.
+      security: [{ bearer: [] }]
+      responses:
+        "200":
+          description: Conversaciones del evento
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [consultas, noLeidas]
+                properties:
+                  consultas: { type: array, items: { $ref: '#/components/schemas/ConsultaResumen' } }
+                  noLeidas: { type: integer, minimum: 0 }
+              example:
+                noLeidas: 1
+                consultas:
+                  - numero: A-1042
+                    comprador: { nombre: Sofía Gómez }
+                    tipoDeEntrada: { nombre: Platea }
+                    cantidad: 2
+                    monto: 36000
+                    estado: Confirmada
+                    ultimoMensaje: { id: msj-3, autor: comprador, texto: "¿Se puede entrar con cochecito?", enviadoEn: "2026-11-08T18:05:00-03:00" }
+                    noLeida: true
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404": { $ref: '#/components/responses/EventoNoEncontrado' }
+
+  /organizadores/eventos/{id}/consultas/{numero}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+      - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+    get:
+      tags: [Consultas (organizador)]
+      summary: Cabecera y mensajes de la conversación de una compra del evento
+      description: >
+        Funciona aunque la compra no tenga mensajes (se abre desde Ventas, FR-013). Con `despuesDe`
+        trae solo los mensajes nuevos (sondeo). La cabecera se devuelve siempre, así el sondeo también
+        actualiza el Tag de estado. No marca como leída.
+      security: [{ bearer: [] }]
+      parameters:
+        - { name: despuesDe, in: query, schema: { type: string }, example: msj-2 }
+      responses:
+        "200":
+          description: Conversación
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [consulta, mensajes]
+                properties:
+                  consulta: { $ref: '#/components/schemas/ConsultaResumen' }
+                  mensajes: { type: array, items: { $ref: '#/components/schemas/Mensaje' } }
+        "400": { $ref: '#/components/responses/DatosInvalidos' }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404":
+          description: Evento ajeno o inexistente (EVENTO_NO_ENCONTRADO), o compra que no es de ese evento (COMPRA_NO_ENCONTRADA)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /organizadores/eventos/{id}/consultas/{numero}/mensajes:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+      - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+    post:
+      tags: [Consultas (organizador)]
+      summary: Responder (o escribir primero) en la conversación de una compra del evento
+      description: El autor es siempre "organizador". Con la compra y el evento en cualquier estado (FR-004).
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuevoMensaje' }
+            example: { texto: "Sí, hay lugar para dejarlo en el hall." }
+      responses:
+        "201":
+          description: Mensaje creado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mensaje]
+                properties: { mensaje: { $ref: '#/components/schemas/Mensaje' } }
+        "400": { $ref: '#/components/responses/DatosInvalidos' }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404":
+          description: Evento ajeno o inexistente, o compra que no es de ese evento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /organizadores/eventos/{id}/consultas/{numero}/lectura:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+      - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+    put:
+      tags: [Consultas (organizador)]
+      summary: Marcar la conversación como leída por el organizador (idempotente)
+      description: Al abrirla desde la lista o desde Ventas, y cuando el sondeo trae mensajes nuevos con la conversación abierta (FR-016).
+      security: [{ bearer: [] }]
+      responses:
+        "204": { description: Marcada como leída }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404":
+          description: Evento ajeno o inexistente, o compra que no es de ese evento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  schemas:
+    Mensaje:
+      type: object
+      required: [id, autor, texto, enviadoEn]
+      properties:
+        id: { type: string, example: msj-3 }
+        autor: { type: string, enum: [comprador, organizador] }
+        texto: { type: string, minLength: 1, maxLength: 1000 }
+        enviadoEn: { type: string, format: date-time }
+
+    NuevoMensaje:
+      type: object
+      additionalProperties: false
+      required: [texto]
+      properties:
+        texto:
+          type: string
+          description: Se recorta. 1 a 1000 caracteres después de recortar ("Escribí un mensaje" / "El mensaje puede tener hasta 1000 caracteres").
+
+    ConsultaResumen:
+      type: object
+      required: [numero, comprador, tipoDeEntrada, cantidad, monto, estado, ultimoMensaje, noLeida]
+      properties:
+        numero: { type: string, example: A-1042 }
+        comprador:
+          type: object
+          required: [nombre]
+          properties: { nombre: { type: string, description: "Nombre y apellido, o el email si faltan" } }
+        tipoDeEntrada:
+          type: object
+          required: [nombre]
+          properties: { nombre: { type: string, nullable: true } }
+        cantidad: { type: integer, minimum: 1 }
+        monto: { type: integer, minimum: 0 }
+        estado: { $ref: '#/components/schemas/EstadoCompra' }
+        ultimoMensaje:
+          allOf: [{ $ref: '#/components/schemas/Mensaje' }]
+          nullable: true
+        noLeida: { type: boolean, description: "Para el organizador (FR-015)" }
+
+    ConsultaNoLeida:
+      type: object
+      required: [numero, evento, organizador, ultimoMensaje]
+      properties:
+        numero: { type: string }
+        evento:
+          type: object
+          required: [id, nombre]
+          properties: { id: { type: string }, nombre: { type: string } }
+        organizador:
+          type: object
+          required: [nombre]
+          properties: { nombre: { type: string } }
+        ultimoMensaje: { $ref: '#/components/schemas/Mensaje' }
+
+    EstadoCompra:
+      type: string
+      enum: [Pendiente de pago, Confirmada, Utilizada, Cancelada, Reembolsada]
+
+  # Cambio en un contrato existente (feature 004, compras.openapi.yaml § Compra):
+  # se agrega `consultaNoLeida: boolean` (FR-023). Compatible: es un campo nuevo.

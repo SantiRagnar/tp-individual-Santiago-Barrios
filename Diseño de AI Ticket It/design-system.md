@@ -210,7 +210,7 @@ Etiqueta chica (`radius-tag`, 11px). Mapeo fijo, igual en las dos apps:
 | Finalizado | `tag-neutral` |
 
 - Categoría del evento (Teatro, Comedia, Drama, Amor) en `tag-neutral`.
-- Estados de compra siempre con ícono + palabra. `tag-lg` (12px) en el detalle de compra; `tag-count` para contador de consultas sin leer dentro de un botón; `dot-unread` (punto de 8px en acento) para "no leído" en listas.
+- Estados de compra siempre con ícono + palabra. `tag-lg` (12px) en el detalle de compra; `tag-count` para contador de consultas sin leer dentro de un botón; `dot-unread` (punto de 8px en acento) para "no leído" en listas, en la PurchaseCard (arriba a la derecha, sin la opacidad del 40% de Cancelada/Reembolsada) y en un botón secundario (**Tengo una consulta**), siempre con etiqueta accesible "Tenés mensajes sin leer" (feature 007).
 
 ### EventCard (Compradores)
 - Imagen de 150px con categoría arriba a la izquierda (`tag-neutral`) y corazón arriba a la derecha (`heart` / `heart-fill` en `accent-300`); debajo título, fecha y lugar con ícono; al pie precio ("Desde $ 12.000") + puntaje del organizador a la izquierda y "Comprar" a la derecha.
@@ -300,9 +300,17 @@ Etiqueta chica (`radius-tag`, 11px). Mapeo fijo, igual en las dos apps:
 - Un chat por compra. Propio a la derecha en `accent-800`; del otro a la izquierda en `surface`. Burbuja `radius-lg`, ancho máximo 78%, hora en 10px muted debajo.
 - Compositor fijo abajo: input redondeado de 44px + botón enviar circular primario.
 - La AppBar del chat dice el evento y "Organizador · Compra #id".
+- Texto de 1 a 1000 caracteres. Desde 900 aparece el contador "N/1000" (caption muted). El botón enviar queda `disabled` con el texto vacío o mientras se envía.
+- Mobile: botón enviar circular con `aria-label` "Enviar". Desktop (Consultas): input "Responder a {comprador}" + botón **Enviar** primario; Enter envía y Shift+Enter agrega un salto de línea.
+- Los mensajes nuevos llegan solos (cada pocos segundos). Si el usuario estaba al final, la lista baja; si estaba leyendo más arriba, no se mueve.
 
 ### ConversationList (Organizadores)
 - Columna izquierda (380px) de Consultas: una conversación por compra con comprador, compra, último mensaje, hora y no leídos (`dot-unread`). La seleccionada con `aria-current="true"` (fondo `surface` + `shadow-sm`). A la derecha, el Chat de esa compra.
+
+### Toast (Compradores, feature 007)
+- Aviso breve arriba de la pantalla, debajo del safe area, con margen `pad-page` y ancho máximo 390. Tarjeta `color-surface`, `shadow-lg`, `radius-lg`, padding `space-3`; ícono de chat (`chat-circle`) en `color-accent`; título `type-body-sm` 500 en `color-text` y segunda línea `type-caption` en `color-text-muted`.
+- Todo el toast es tocable (lleva a lo que avisa). `role="alert"` + `aria-live="polite"`. Desaparece a los 5 s; uno nuevo reemplaza al anterior.
+- Uso: "Nuevo mensaje de {organizador}" / "{evento} · Compra #{número}"; varios: "Tenés N mensajes nuevos" / "Tocá para ver tus compras".
 
 ### Rating
 - **Para calificar:** cinco estrellas (botones con `aria-label` "N estrellas" y `aria-pressed` en la elegida), llenas hasta la elegida. Botón de envío `disabled` hasta elegir. Comentario opcional ("Contanos qué te pareció (opcional)").

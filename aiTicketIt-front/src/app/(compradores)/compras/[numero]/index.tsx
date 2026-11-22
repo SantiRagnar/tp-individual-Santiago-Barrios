@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Info } from 'phosphor-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +14,7 @@ import { ImagenDeEvento } from '@/components/ds/ImagenEvento';
 import { PantallaCargando, PantallaDeAviso, SIN_CONEXION } from '@/components/ds/PantallaDeAviso';
 import { TagCompra } from '@/components/ds/Tag';
 import { cuentaRegresiva, entradas, estrellas, fechaYHoraLarga, numeroCompra, plata } from '@/lib/formato';
+import { useAvisosDeConsultas } from '@/consultas/AvisosDeConsultasProvider';
 import { useSesion } from '@/sesion/SesionProvider';
 import { color, iconSize, radius, shadow, space, type } from '@/theme/tokens';
 
@@ -67,6 +68,15 @@ export default function DetalleCompra() {
       };
     }, [cargar]),
   );
+
+  // Una respuesta nueva del organizador recarga la compra, así aparece el punto (feature 007, FR-023).
+  const { version } = useAvisosDeConsultas();
+  const versionVista = useRef(version);
+  useEffect(() => {
+    if (versionVista.current === version) return;
+    versionVista.current = version;
+    void cargar();
+  }, [version, cargar]);
 
   /** Completar pago o cancelar: muestra la compra que devuelve la API; un 409 vuelve a pedir la compra. */
   const ejecutar = (tipo: Exclude<Accion, null>, llamada: () => Promise<Compra>) => {
@@ -184,8 +194,10 @@ export default function DetalleCompra() {
       </ScrollView>
 
       <View style={[styles.pie, { paddingBottom: Math.max(bottom, space.padFooterBottom) }]}>
-        {/* Sin acción hasta la feature de consultas (FR-029). */}
-        <Button variante="secondary" onPress={() => {}}>
+        <Button
+          variante="secondary"
+          noLeido={compra.consultaNoLeida}
+          onPress={() => router.push({ pathname: '/compras/[numero]/consulta', params: { numero: compra.numero } })}>
           Tengo una consulta
         </Button>
         {compra.acciones.cancelar ? (

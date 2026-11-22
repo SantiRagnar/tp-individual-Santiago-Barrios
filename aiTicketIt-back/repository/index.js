@@ -1,5 +1,6 @@
 import * as compradoresRepository from "./compradoresRepository.js";
 import * as comprasRepository from "./comprasRepository.js";
+import * as consultasRepository from "./consultasRepository.js";
 import * as eventosRepository from "./eventosRepository.js";
 import * as favoritosRepository from "./favoritosRepository.js";
 import * as imagenesRepository from "./imagenesRepository.js";
@@ -15,4 +16,5 @@ export function reiniciarRepositorios() {
   imagenesRepository.reiniciar();
   comprasRepository.reiniciar();
   favoritosRepository.reiniciar();
+  consultasRepository.reiniciar();
 }

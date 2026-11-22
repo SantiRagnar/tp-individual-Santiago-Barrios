@@ -21,6 +21,10 @@ type Props = {
   /** 36px (desktop) en lugar de 44/46px (mobile). */
   compacto?: boolean;
   accessibilityHint?: string;
+  /** `tag-count` dentro del botón (p. ej. consultas sin leer); 0 o undefined = sin contador (feature 007). */
+  contador?: number;
+  /** `dot-unread` al lado del texto: hay mensajes sin leer (feature 007). */
+  noLeido?: boolean;
 };
 
 /**
@@ -37,6 +41,8 @@ export function Button({
   icono,
   compacto = false,
   accessibilityHint,
+  contador,
+  noLeido = false,
 }: Props) {
   const inactivo = disabled || enviando;
   const atenuado = inactivo || pareceDeshabilitado;
@@ -66,6 +72,12 @@ export function Button({
       <View style={styles.contenido}>
         {enviando ? <ActivityIndicator size="small" color={color.accent} /> : icono}
         <Text style={[type.bodySm, { color: acento ? color.accent : color.text }]}>{children}</Text>
+        {contador ? (
+          <View style={styles.contador} accessibilityLabel={`${contador} sin leer`}>
+            <Text style={[type.meta, styles.contadorTexto]}>{contador}</Text>
+          </View>
+        ) : null}
+        {noLeido ? <View style={styles.punto} accessibilityLabel="Tenés mensajes sin leer" accessibilityRole="image" /> : null}
       </View>
     </Pressable>
   );
@@ -86,6 +98,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.gapTight,
   },
+  // `tag-count` (design-system.md § Tag): pastilla en acento con el número.
+  contador: {
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: space.s2,
+    borderRadius: radius.pill,
+    backgroundColor: color.accent800,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contadorTexto: { color: color.accent200, fontVariant: ['tabular-nums'] },
+  // `dot-unread`: punto de 8px en acento.
+  punto: { width: 8, height: 8, borderRadius: radius.pill, backgroundColor: color.accent },
   foco: {
     outlineWidth: 2,
     outlineStyle: 'solid',
