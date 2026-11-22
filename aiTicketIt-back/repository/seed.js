@@ -36,6 +36,13 @@ export const compradoresSeed = [
     ["cmp-14", "Julieta", "Benítez", "julieta.benitez@correo.com"],
     ["cmp-15", "Matías", "Molina", "matias.molina@correo.com"],
   ].map(([id, nombre, apellido, email]) => ({ id, nombre, apellido, email, contrasenaHash: HASH_CONTRASENA_DESARROLLO })),
+  {
+    id: "cmp-16",
+    nombre: "Santiago",
+    apellido: "Barrios",
+    email: "santibarrios2000@gmail.com",
+    contrasenaHash: HASH_CONTRASENA_DESARROLLO,
+  },
 ];
 
 export const organizadoresSeed = [
@@ -55,6 +62,12 @@ export const organizadoresSeed = [
     id: "org-3",
     nombre: "Producciones Lumbre",
     email: "contacto@lumbre.com.ar",
+    contrasenaHash: HASH_CONTRASENA_DESARROLLO,
+  },
+  {
+    id: "org-4",
+    nombre: "deamworks",
+    email: "dreamworks@dreamworks.com",
     contrasenaHash: HASH_CONTRASENA_DESARROLLO,
   },
 ];
