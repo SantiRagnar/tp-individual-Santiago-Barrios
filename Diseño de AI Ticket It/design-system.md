@@ -123,6 +123,7 @@ Inter 400 y 500 (Google Fonts) para todo (`heading` y `body`: `"Inter", system-u
 | `chip-height` | 34px | Chip de categoría mobile |
 | `tab-height` | 48px | Pestaña de BottomNav y fila del menú de perfil |
 | `avatar-lg` / `avatar-md` / `avatar-sm` | 52 / 44 / 36px | Menú de perfil / saludo Explorar / header desktop |
+| `star-lg` / `star-sm` | 36 / 28px | Estrellas para calificar: Calificar experiencia / recordatorio de Explorar (feature 006) |
 | `frame-mobile-w` × `frame-mobile-h` | 390 × 844 | Marco mobile |
 | `frame-desktop-w` × `frame-desktop-h` | 1280 × 800 | Marco desktop |
 
@@ -305,13 +306,14 @@ Etiqueta chica (`radius-tag`, 11px). Mapeo fijo, igual en las dos apps:
 - Columna izquierda (380px) de Consultas: una conversación por compra con comprador, compra, último mensaje, hora y no leídos (`dot-unread`). La seleccionada con `aria-current="true"` (fondo `surface` + `shadow-sm`). A la derecha, el Chat de esa compra.
 
 ### Rating
-- **Para calificar:** cinco estrellas (botones con `aria-label` "N estrellas" y `aria-pressed` en la elegida), llenas hasta la elegida. Botón de envío `disabled` hasta elegir. Comentario opcional ("Contanos qué te pareció (opcional)").
+- **Para calificar:** `SelectorEstrellas` (feature 006): cinco estrellas (botones con `aria-label` "N estrellas" y `aria-pressed` en la elegida), llenas hasta la elegida. Botón de envío `disabled` hasta elegir. Comentario opcional ("Contanos qué te pareció (opcional)").
 - **Para mostrar:** puntaje (32px) + nombre del organizador + "N reseñas de eventos anteriores". Cada reseña: autor, estrellas en texto (★★★★☆), evento y comentario muted.
 - **La reseña es del organizador, no del evento.**
 - **Lista larga:** se muestran 5 reseñas; **Ver más** (Button secundario, con indicador mientras carga) agrega 5 más debajo y desaparece cuando ya están todas.
 - **Sin reseñas:** nombre del organizador + "Todavía no tiene reseñas." (sin puntaje ni contador).
 - **Reglas:** solo una compra **Utilizada** se puede calificar, **una sola vez**. Puntaje 1–5 + comentario opcional de hasta 500 caracteres, guardado en la compra.
 - **Dónde se califica:** Mis compras ("Calificá tu experiencia" / ya calificada "Calificaste ★★★★☆"), Detalle de compra (tarjeta "Tu entrada fue utilizada" → "Calificar experiencia"; ya calificada "Tu calificación" + "Visible en los eventos de {organizador}"), pantalla Calificar experiencia (estrellas grandes 36px, palabra del puntaje: Malo, Regular, Bueno, Muy bueno, Excelente; comentario con contador; "Enviar calificación"), y Explorar (recordatorio con la compra utilizada más reciente sin calificar).
+- **Recordatorio** (`RecordatorioCalificacion`, feature 006): tarjeta `surface` con "Tu entrada fue utilizada", la pregunta, estrellas `star-sm`, comentario opcional y **Calificar**; al enviar se reemplaza por la confirmación en línea (`check-circle`).
 
 ### Feedback
 - `note`: aviso informativo con ícono `info` (12–13px muted), para reglas.

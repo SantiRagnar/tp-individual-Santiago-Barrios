@@ -70,6 +70,18 @@ export function puntaje(valor: number): string {
   return valor.toFixed(1);
 }
 
+const PALABRAS_PUNTAJE = ['Malo', 'Regular', 'Bueno', 'Muy bueno', 'Excelente'];
+
+/** 1 → "Malo" … 5 → "Excelente"; sin elegir → "Elegí de 1 a 5 estrellas" (pantallas.md § Calificaciones). */
+export function palabraPuntaje(puntaje: number | null): string {
+  return puntaje && puntaje >= 1 && puntaje <= 5 ? PALABRAS_PUNTAJE[puntaje - 1] : 'Elegí de 1 a 5 estrellas';
+}
+
+/** 37 → "37/500" (contador del comentario de una calificación). */
+export function contadorCaracteres(usados: number, maximo = 500): string {
+  return `${usados}/${maximo}`;
+}
+
 /** 4 → "★★★★☆". */
 export function estrellas(valor: number): string {
   const llenas = Math.max(0, Math.min(5, Math.round(valor)));

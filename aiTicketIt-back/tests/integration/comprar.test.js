@@ -34,7 +34,7 @@ describe("POST /compradores/compras — US1", () => {
     assert.equal(compra.evento.nombre, "Hamlet en el Galpón");
     assert.equal(compra.evento.organizador.nombre, "Compañía La Trama");
     assert.equal(compra.diasParaEvento, 13);
-    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: true });
+    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: true, calificar: false });
     assert.equal(compra.motivoNoCancelable, null);
   });
 

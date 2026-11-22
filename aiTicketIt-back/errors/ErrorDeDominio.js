@@ -132,3 +132,16 @@ export class EventoNoComenzo extends ErrorDeDominio {
     super({ codigo: "EVENTO_NO_COMENZO", mensaje: "Todavía no es el día del evento.", status: 409 });
   }
 }
+
+// Feature 006 (specs/006-calificaciones-opiniones/data-model.md § Errores nuevos).
+export class CompraYaCalificada extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "COMPRA_YA_CALIFICADA", mensaje: "Esta compra ya fue calificada.", status: 409 });
+  }
+}
+
+export class CalificacionNoPermitida extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "CALIFICACION_NO_PERMITIDA", mensaje: "Solo podés calificar una entrada utilizada.", status: 409 });
+  }
+}

@@ -233,3 +233,57 @@ describe("compras del seed de Sofía (feature 004)", () => {
     assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-2"), { suma: 11, cantidad: 3 });
   });
 });
+
+// specs/006-calificaciones-opiniones/research.md R2; data-model.md § Compra · transición nueva.
+describe("comprasRepository.calificar (feature 006)", () => {
+  const calificacion = (calificadaEn, puntaje = 5, comentario = null) => ({ puntaje, comentario, calificadaEn });
+
+  it("guarda la calificación en la compra y actualiza suma y cantidad del organizador", () => {
+    const compra = comprasRepository.calificar("A-0871", calificacion("2026-11-09T12:00:00-03:00", 5, "Hermosa"), { organizadorId: "org-3" });
+    assert.equal(compra.numero, "A-0871");
+    assert.deepEqual({ ...comprasRepository.buscarPorNumero("A-0871").calificacion }, {
+      puntaje: 5,
+      comentario: "Hermosa",
+      calificadaEn: "2026-11-09T12:00:00-03:00",
+    });
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-3"), { suma: 13, cantidad: 3 });
+  });
+
+  it("la más reciente queda primera en las reseñas del organizador", () => {
+    comprasRepository.calificar("A-0871", calificacion("2026-11-09T12:00:00-03:00"), { organizadorId: "org-3" });
+    assert.deepEqual(
+      comprasRepository.listarCalificadas("org-3", { limite: 10 }).map((c) => c.numero),
+      ["A-0871", "A-0834", "A-0820"],
+    );
+  });
+
+  it("una calificación con fecha intermedia se inserta en su lugar", () => {
+    comprasRepository.calificar("A-0871", calificacion("2026-10-20T10:00:00-03:00"), { organizadorId: "org-3" });
+    assert.deepEqual(
+      comprasRepository.listarCalificadas("org-3", { limite: 10 }).map((c) => c.numero),
+      ["A-0834", "A-0871", "A-0820"],
+    );
+  });
+
+  it("no reindexa la compra por evento ni por comprador", () => {
+    const delComprador = comprasRepository.listarPorComprador("cmp-1").length;
+    const delEvento = comprasRepository.todasDelEvento("evt-6").length;
+    comprasRepository.calificar("A-0871", calificacion("2026-11-09T12:00:00-03:00"), { organizadorId: "org-3" });
+    assert.equal(comprasRepository.listarPorComprador("cmp-1").length, delComprador);
+    assert.equal(comprasRepository.todasDelEvento("evt-6").length, delEvento);
+  });
+
+  it("lanza si la compra ya estaba calificada o no existe, sin tocar el índice", () => {
+    assert.throws(() => comprasRepository.calificar("A-0655", calificacion("2026-11-09T12:00:00-03:00"), { organizadorId: "org-1" }));
+    assert.throws(() => comprasRepository.calificar("A-9999", calificacion("2026-11-09T12:00:00-03:00"), { organizadorId: "org-1" }));
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-1"), { suma: 18, cantidad: 4 });
+    assert.equal(comprasRepository.buscarPorNumero("A-0655").calificacion.puntaje, 4);
+  });
+
+  it("reiniciar() vuelve al seed", () => {
+    comprasRepository.calificar("A-0871", calificacion("2026-11-09T12:00:00-03:00"), { organizadorId: "org-3" });
+    comprasRepository.reiniciar();
+    assert.equal(comprasRepository.buscarPorNumero("A-0871").calificacion, null);
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-3"), { suma: 8, cantidad: 2 });
+  });
+});

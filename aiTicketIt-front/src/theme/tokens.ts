@@ -106,6 +106,9 @@ export const size = {
   avatarLg: 52,
   avatarMd: 44,
   avatarSm: 36,
+  /** `star-lg` / `star-sm`: estrellas para calificar (Calificar experiencia / recordatorio de Explorar). */
+  starLg: 36,
+  starSm: 28,
   frameMobileW: 390,
   frameDesktopW: 1280,
 } as const;

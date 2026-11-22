@@ -1,4 +1,4 @@
-import { Compra } from "../models/Compra.js";
+import { Calificacion, Compra } from "../models/Compra.js";
 import { comprasSeed, eventosSeed } from "./seed.js";
 
 // Indexado por data-model.md Compra.numero. Además:
@@ -72,6 +72,25 @@ export function guardar(datos, { organizadorId }) {
     indice.suma += compra.calificacion.puntaje;
     indice.cantidad += 1;
   }
+  return compra;
+}
+
+/**
+ * Califica una compra ya guardada (specs/006-calificaciones-opiniones/research.md R2): asigna la calificación
+ * y la suma al índice del organizador (orden [calificadaEn desc, numero desc], suma y cantidad). No vuelve a
+ * indexar por evento ni por comprador. Las reglas (Utilizada, una sola vez, propia) las verifica el servicio;
+ * acá solo se protege la integridad del índice.
+ */
+export function calificar(numero, datos, { organizadorId }) {
+  const compra = porNumero.get(numero);
+  if (!compra) throw new Error(`No existe la compra ${numero}`);
+  if (compra.calificacion) throw new Error(`La compra ${numero} ya está calificada`);
+
+  compra.calificacion = new Calificacion(datos);
+  const indice = indiceDe(organizadorId);
+  insertarOrdenada(indice.calificadas, compra, claveDe);
+  indice.suma += compra.calificacion.puntaje;
+  indice.cantidad += 1;
   return compra;
 }
 

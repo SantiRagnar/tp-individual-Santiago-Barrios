@@ -169,3 +169,34 @@ describe("/docs.json — compra, pago simulado y Mis compras (feature 004)", () 
     assert.ok(body.components.responses.CompraNoEncontrada);
   });
 });
+
+// Debe coincidir con specs/006-calificaciones-opiniones/contracts/calificaciones.openapi.yaml (Principio IV).
+const ESPERADO_CALIFICACIONES = {
+  "/compradores/compras/{numero}/calificacion": { post: ["201", "400", "401", "404", "409"] },
+  "/compradores/calificaciones/pendiente": { get: ["200", "401"] },
+};
+
+describe("/docs.json — calificaciones (feature 006)", () => {
+  it("documenta los endpoints con sus métodos, respuestas y el tag Calificaciones", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const [ruta, metodos] of Object.entries(ESPERADO_CALIFICACIONES)) {
+      const documentada = body.paths[ruta];
+      assert.ok(documentada, `falta ${ruta}`);
+      const metodosDocumentados = Object.keys(documentada).filter((k) => k !== "parameters");
+      assert.deepEqual(metodosDocumentados.sort(), Object.keys(metodos).sort(), ruta);
+      for (const [metodo, codigos] of Object.entries(metodos)) {
+        assert.deepEqual(Object.keys(documentada[metodo].responses).sort(), codigos, `${metodo.toUpperCase()} ${ruta}`);
+        assert.deepEqual(documentada[metodo].tags, ["Calificaciones"], `${metodo.toUpperCase()} ${ruta}`);
+      }
+    }
+  });
+
+  it("define NuevaCalificacion y los campos nuevos de Compra", async () => {
+    const { body } = await request(app).get("/docs.json");
+    assert.ok(body.components.schemas.NuevaCalificacion);
+    const compra = body.components.schemas.Compra;
+    assert.ok(compra.properties.motivoNoCalificable);
+    assert.ok(compra.properties.acciones.properties.calificar);
+    assert.ok(compra.required.includes("motivoNoCalificable"));
+  });
+});

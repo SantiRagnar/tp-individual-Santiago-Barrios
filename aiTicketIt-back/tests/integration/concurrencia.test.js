@@ -62,3 +62,30 @@ describe("Concurrencia de pagos — SC-003", () => {
     assert.equal(vendidas(eventoId), 9);
   });
 });
+
+// specs/006-calificaciones-opiniones: SC-003 / research R6. Una sola calificación por compra, aunque lleguen
+// varios pedidos a la vez.
+describe("Concurrencia de calificaciones — SC-003 (feature 006)", () => {
+  it("20 calificaciones simultáneas de A-0871: un 201, 19 × 409 y una sola reseña nueva", async () => {
+    const sofia = tokens[0];
+    const resenasDeLumbre = async () =>
+      (await request(app).get("/compradores/organizadores/org-3/resenas").set("Authorization", `Bearer ${sofia}`)).body.total;
+    const antes = await resenasDeLumbre();
+
+    const respuestas = await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        request(app)
+          .post("/compradores/compras/A-0871/calificacion")
+          .set("Authorization", `Bearer ${sofia}`)
+          .send({ puntaje: (i % 5) + 1 }),
+      ),
+    );
+
+    const creadas = respuestas.filter((r) => r.status === 201);
+    assert.equal(creadas.length, 1);
+    assert.equal(respuestas.filter((r) => r.status === 409 && r.body.error.codigo === "COMPRA_YA_CALIFICADA").length, 19);
+    assert.equal(await resenasDeLumbre(), antes + 1);
+    const guardada = await request(app).get("/compradores/compras/A-0871").set("Authorization", `Bearer ${sofia}`);
+    assert.equal(guardada.body.compra.calificacion.puntaje, creadas[0].body.compra.calificacion.puntaje);
+  });
+});

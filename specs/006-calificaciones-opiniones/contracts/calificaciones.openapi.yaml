@@ -1,0 +1,118 @@
+openapi: 3.0.0
+info:
+  title: AI Ticket It API — Calificaciones (feature 006)
+  version: 1.0.0
+  description: >
+    Se copia a comentarios @openapi. POST …/calificacion va en routes/compras.js (montado en
+    /compradores/compras) y GET /compradores/calificaciones/pendiente en routes/calificaciones.js (nuevo,
+    montado en /compradores/calificaciones). Los dos usan requiereSesion("comprador").
+    Reutiliza de las features 001 a 004: securitySchemes.bearer, schemas.Error, schemas.Compra,
+    responses.SesionInvalida y responses.CompraNoEncontrada. Schemas.Compra suma dos campos:
+    acciones.calificar y motivoNoCalificable (data-model.md § Vista Compra).
+    Las reseñas publicadas se leen con los endpoints existentes de la feature 003
+    (GET /compradores/eventos/{id} y GET /compradores/organizadores/{id}/resenas), sin cambios.
+
+tags:
+  - name: Calificaciones
+
+paths:
+  /compradores/compras/{numero}/calificacion:
+    parameters:
+      - { name: numero, in: path, required: true, schema: { type: string }, example: A-0871 }
+    post:
+      tags: [Calificaciones]
+      summary: Calificar una compra Utilizada (una sola vez)
+      description: >
+        Guarda el puntaje (1 a 5) y el comentario opcional en la compra, y lo publica como reseña del
+        organizador del evento (FR-002 a FR-005). No hay condición de fecha ni plazo (Clarifications).
+        Si llegan pedidos simultáneos sobre la misma compra, se guarda uno solo y el resto responde 409
+        COMPRA_YA_CALIFICADA (research R6). Una compra ajena responde igual que una inexistente.
+      security: [{ bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuevaCalificacion' }
+            examples:
+              conComentario: { value: { puntaje: 5, comentario: "Hermosa puesta, el conventillo le suma muchísimo." } }
+              sinComentario: { value: { puntaje: 3 } }
+      responses:
+        '201':
+          description: Compra calificada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [compra]
+                properties:
+                  compra: { $ref: '#/components/schemas/Compra' }
+        '400':
+          description: Datos inválidos (puntaje fuera de 1–5 o no entero, comentario de más de 500 caracteres, campos de más)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example:
+                error:
+                  codigo: DATOS_INVALIDOS
+                  mensaje: Revisá los datos enviados.
+                  campos: [{ campo: puntaje, mensaje: Elegí de 1 a 5 estrellas }]
+        '401': { $ref: '#/components/responses/SesionInvalida' }
+        '404': { $ref: '#/components/responses/CompraNoEncontrada' }
+        '409':
+          description: La compra ya fue calificada o no está Utilizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                yaCalificada:
+                  value: { error: { codigo: COMPRA_YA_CALIFICADA, mensaje: Esta compra ya fue calificada. } }
+                noUtilizada:
+                  value: { error: { codigo: CALIFICACION_NO_PERMITIDA, mensaje: Solo podés calificar una entrada utilizada. } }
+
+  /compradores/calificaciones/pendiente:
+    get:
+      tags: [Calificaciones]
+      summary: Compra a recordar en Explorar (Utilizada sin calificar, la del evento más reciente)
+      description: >
+        Devuelve la compra del comprador con acciones.calificar = true cuyo evento tiene la fechaHora más
+        reciente; a igual fecha, la de número mayor (FR-014, research R7). Sin compras pendientes, compra es null.
+      security: [{ bearer: [] }]
+      responses:
+        '200':
+          description: Compra pendiente de calificar, o null
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [compra]
+                properties:
+                  compra:
+                    allOf: [{ $ref: '#/components/schemas/Compra' }]
+                    nullable: true
+        '401': { $ref: '#/components/responses/SesionInvalida' }
+
+components:
+  schemas:
+    NuevaCalificacion:
+      type: object
+      additionalProperties: false
+      required: [puntaje]
+      properties:
+        puntaje: { type: integer, minimum: 1, maximum: 5, example: 5 }
+        comentario:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: Se recortan los espacios; vacío o solo espacios se guarda como null. El límite se cuenta después de recortar.
+    # Campos que se agregan a schemas.Compra (feature 004):
+    CompraCamposCalificacion:
+      type: object
+      properties:
+        acciones:
+          type: object
+          properties:
+            calificar: { type: boolean, description: "Utilizada y sin calificar" }
+        motivoNoCalificable:
+          type: string
+          nullable: true
+          enum: [YA_CALIFICADA, NO_UTILIZADA]

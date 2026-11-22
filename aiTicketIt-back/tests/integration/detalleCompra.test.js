@@ -52,20 +52,20 @@ describe("GET /compradores/compras/:numero — US3 (compras del seed de Sofía)"
     assert.equal(compra.evento.ubicacion, "Galpón de Guevara, Chacarita");
     assert.equal(compra.evento.fechaHora, "2026-11-21T21:00:00-03:00");
     assert.equal(compra.diasParaEvento, 13);
-    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: true });
+    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: true, calificar: false });
     assert.equal(compra.motivoNoCancelable, null);
   });
 
   it("A-1037 (Pendiente): se puede completar el pago y cancelar", async () => {
     const { compra } = (await detalle("A-1037")).body;
-    assert.deepEqual(compra.acciones, { completarPago: true, cancelar: true });
+    assert.deepEqual(compra.acciones, { completarPago: true, cancelar: true, calificar: false });
   });
 
   it("A-0871 (Utilizada sin calificar): UTILIZADA y sin calificación", async () => {
     const { compra } = (await detalle("A-0871")).body;
     assert.equal(compra.motivoNoCancelable, "UTILIZADA");
     assert.equal(compra.calificacion, null);
-    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: false });
+    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: false, calificar: true });
   });
 
   it("A-0790 (Reembolsada): REEMBOLSADA", async () => {
@@ -85,7 +85,7 @@ describe("GET /compradores/compras/:numero — US3 (compras del seed de Sofía)"
     const { compra } = (await detalle("A-1042")).body;
     assert.equal(compra.motivoNoCancelable, "EVENTO_REALIZADO");
     assert.equal(compra.diasParaEvento, null);
-    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: false });
+    assert.deepEqual(compra.acciones, { completarPago: false, cancelar: false, calificar: false });
   });
 
   it("si el organizador renombra el tipo después, la compra conserva el nombre comprado (research R6)", async () => {

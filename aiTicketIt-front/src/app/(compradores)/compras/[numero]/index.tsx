@@ -136,7 +136,7 @@ export default function DetalleCompra() {
           ]}
         />
 
-        {compra.estado === 'Utilizada' && compra.calificacion ? (
+        {compra.calificacion ? (
           <View style={styles.tarjeta}>
             <Text style={[type.h5, { color: color.text }]}>Tu calificación</Text>
             <Text style={[type.body, { color: color.accent300 }]} accessibilityLabel={`${compra.calificacion.puntaje} de 5 estrellas`}>
@@ -146,14 +146,16 @@ export default function DetalleCompra() {
             <Text style={[type.caption, { color: color.textMuted }]}>{`Visible en los eventos de ${organizador}`}</Text>
           </View>
         ) : null}
-        {compra.estado === 'Utilizada' && !compra.calificacion ? (
+        {compra.acciones.calificar ? (
           <View style={styles.tarjeta}>
             <Text style={[type.h5, { color: color.text }]}>Tu entrada fue utilizada</Text>
             <Text style={[type.bodySm, { color: color.textLabel }]}>
               {`Contales a otros compradores cómo fue tu experiencia con ${organizador}.`}
             </Text>
-            {/* Sin acción hasta la feature de calificaciones (FR-029). */}
-            <Button variante="primary" onPress={() => {}}>
+            {/* Feature 006: al enviar, Calificar experiencia vuelve acá (desde=detalle, research R9). */}
+            <Button
+              variante="primary"
+              onPress={() => router.push({ pathname: '/compras/[numero]/calificar', params: { numero: compra.numero, desde: 'detalle' } })}>
               Calificar experiencia
             </Button>
           </View>

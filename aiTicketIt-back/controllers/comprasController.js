@@ -24,4 +24,14 @@ export const comprasController = {
   cancelar(req, res) {
     res.json({ compra: dto(comprasService.cancelar(req.sesion.usuario.id, req.params.numero)) });
   },
+
+  // Feature 006 (specs/006-calificaciones-opiniones/contracts/calificaciones.openapi.yaml).
+  calificar(req, res) {
+    res.status(201).json({ compra: dto(comprasService.calificar(req.sesion.usuario.id, req.params.numero, req.body)) });
+  },
+
+  pendienteDeCalificar(req, res) {
+    const pendiente = comprasService.pendienteDeCalificar(req.sesion.usuario.id);
+    res.json({ compra: pendiente ? dto(pendiente) : null });
+  },
 };

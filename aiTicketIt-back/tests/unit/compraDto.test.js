@@ -51,8 +51,9 @@ describe("aCompraDto", () => {
       },
       diasParaEvento: 13,
       calificacion: null,
-      acciones: { completarPago: false, cancelar: true },
+      acciones: { completarPago: false, cancelar: true, calificar: false },
       motivoNoCancelable: null,
+      motivoNoCalificable: "NO_UTILIZADA",
     });
   });
 
@@ -65,11 +66,11 @@ describe("aCompraDto", () => {
 
   it("acciones, motivo y cuenta regresiva salen de reglasCompra con el ahora recibido", () => {
     const pendiente = aCompraDto(compra({ estado: "Pendiente de pago" }), evento(), ORGANIZADOR, HOY);
-    assert.deepEqual(pendiente.acciones, { completarPago: true, cancelar: true });
+    assert.deepEqual(pendiente.acciones, { completarPago: true, cancelar: true, calificar: false });
     assert.equal(pendiente.diasParaEvento, null);
 
     const despues = aCompraDto(compra(), evento(), ORGANIZADOR, new Date("2026-11-22T10:00:00-03:00"));
-    assert.deepEqual(despues.acciones, { completarPago: false, cancelar: false });
+    assert.deepEqual(despues.acciones, { completarPago: false, cancelar: false, calificar: false });
     assert.equal(despues.motivoNoCancelable, "EVENTO_REALIZADO");
     assert.equal(despues.diasParaEvento, null);
   });
@@ -83,5 +84,21 @@ describe("aCompraDto", () => {
 
   it("imagenUrl es null si el evento no tiene imagen", () => {
     assert.equal(aCompraDto(compra(), evento({ imagenId: null }), ORGANIZADOR, HOY).evento.imagenUrl, null);
+  });
+
+  // specs/006-calificaciones-opiniones/data-model.md § Vista Compra (acciones.calificar, motivoNoCalificable).
+  it("acciones.calificar y motivoNoCalificable salen de reglasCalificacion", () => {
+    const sinCalificar = aCompraDto(compra({ estado: "Utilizada" }), evento(), ORGANIZADOR, HOY);
+    assert.equal(sinCalificar.acciones.calificar, true);
+    assert.equal(sinCalificar.motivoNoCalificable, null);
+
+    const calificacion = { puntaje: 4, comentario: null, calificadaEn: "2026-09-13T18:00:00-03:00" };
+    const calificada = aCompraDto(compra({ estado: "Utilizada", calificacion }), evento(), ORGANIZADOR, HOY);
+    assert.equal(calificada.acciones.calificar, false);
+    assert.equal(calificada.motivoNoCalificable, "YA_CALIFICADA");
+
+    const confirmada = aCompraDto(compra(), evento(), ORGANIZADOR, HOY);
+    assert.equal(confirmada.acciones.calificar, false);
+    assert.equal(confirmada.motivoNoCalificable, "NO_UTILIZADA");
   });
 });

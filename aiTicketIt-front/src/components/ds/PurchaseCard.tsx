@@ -13,10 +13,11 @@ const OPACIDAD_INACTIVA = 0.4;
 
 /**
  * Fila de Mis compras (design-system.md § PurchaseCard): texto a la izquierda e imagen de 104px a la derecha;
- * abajo el Tag de estado y, si está Confirmada, la cuenta regresiva. "Calificá tu experiencia" se ve pero no
- * hace nada hasta la feature de calificaciones (FR-029).
+ * abajo el Tag de estado y, si está Confirmada, la cuenta regresiva. Si la compra se puede calificar
+ * (`acciones.calificar`), "Calificá tu experiencia" abre Calificar experiencia con `onCalificar` (feature 006);
+ * ya calificada muestra "Calificaste ★★★★☆".
  */
-export function PurchaseCard({ compra, onPress }: { compra: Compra; onPress: () => void }) {
+export function PurchaseCard({ compra, onPress, onCalificar }: { compra: Compra; onPress: () => void; onCalificar?: () => void }) {
   const inactiva = compra.estado === 'Cancelada' || compra.estado === 'Reembolsada';
   return (
     <Pressable
@@ -46,10 +47,22 @@ export function PurchaseCard({ compra, onPress }: { compra: Compra; onPress: () 
         {compra.diasParaEvento !== null ? (
           <Text style={[type.caption, { color: color.accent300 }]}>{cuentaRegresiva(compra.diasParaEvento)}</Text>
         ) : null}
-        {compra.estado === 'Utilizada' ? (
-          <Text style={[type.caption, { color: compra.calificacion ? color.textLabel : color.accent }]}>
-            {compra.calificacion ? `Calificaste ${estrellas(compra.calificacion.puntaje)}` : 'Calificá tu experiencia'}
+        {compra.calificacion ? (
+          <Text style={[type.caption, { color: color.textLabel }]} accessibilityLabel={`Calificaste ${compra.calificacion.puntaje} de 5 estrellas`}>
+            {`Calificaste ${estrellas(compra.calificacion.puntaje)}`}
           </Text>
+        ) : compra.acciones.calificar ? (
+          <Pressable
+            onPress={onCalificar}
+            accessibilityRole="button"
+            accessibilityLabel={`Calificá tu experiencia en ${compra.evento.nombre}`}
+            hitSlop={space.s3}
+            style={({ pressed, focused }: { pressed: boolean; focused?: boolean }) => [
+              pressed && { backgroundColor: tinte.textoPresionado },
+              focused && Platform.OS === 'web' && styles.foco,
+            ]}>
+            <Text style={[type.caption, { color: color.accent }]}>Calificá tu experiencia</Text>
+          </Pressable>
         ) : null}
       </View>
     </Pressable>

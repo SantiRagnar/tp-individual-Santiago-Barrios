@@ -1,6 +1,8 @@
 import {
+  CalificacionNoPermitida,
   CancelacionNoPermitida,
   CompraNoEncontrada,
+  CompraYaCalificada,
   EventoNoEncontrado,
   LugaresInsuficientes,
   PagoNoPermitido,
@@ -10,13 +12,14 @@ import { Compra } from "../models/Compra.js";
 import * as comprasRepository from "../repository/comprasRepository.js";
 import * as eventosRepository from "../repository/eventosRepository.js";
 import * as organizadoresRepository from "../repository/organizadoresRepository.js";
+import { motivoNoCalificable, puedeCalificar } from "./reglasCalificacion.js";
 import { estadoTrasCancelar, motivoNoCancelable, puedeCompletarPago } from "./reglasCompra.js";
 import { ahora } from "./reloj.js";
 import { esVisibleParaCompradores } from "./visibilidadEvento.js";
 
 // Compras del comprador (specs/004-compra-pago-mis-compras, research R1–R7).
 //
-// INVARIANTE (research R2): comprar, completarPago y cancelar son SINCRÓNICAS. No agregar `await`, callbacks
+// INVARIANTE (research R2): comprar, completarPago, cancelar y calificar (feature 006, research R6) son SINCRÓNICAS. No agregar `await`, callbacks
 // ni promesas entre la verificación (visibilidad, precio, lugares, estado) y la escritura (vendidas, compra).
 // Node ejecuta JavaScript en un solo hilo y los datos viven en memoria: un bloque sin puntos de suspensión
 // no puede intercalarse con otra request, y eso es lo que garantiza que nunca se venda más que el cupo.
@@ -110,4 +113,46 @@ export function cancelar(compradorId, numero) {
   }
   compra.estado = estadoTrasCancelar(compra);
   return conContexto(compra, momento);
+}
+
+/**
+ * Calificar (specs/006-calificaciones-opiniones, research R2, R6): guarda puntaje y comentario en una compra
+ * Utilizada todavía sin calificar y la suma a las reseñas de su organizador (FR-002 a FR-005). Sin condición de
+ * fecha ni plazo. SINCRÓNICA (ver invariante arriba): dos pedidos simultáneos no pueden guardar dos calificaciones.
+ */
+export function calificar(compradorId, numero, { puntaje, comentario }) {
+  const momento = ahora();
+  const compra = compraDe(compradorId, numero);
+  const motivo = motivoNoCalificable(compra);
+  if (motivo === "YA_CALIFICADA") throw new CompraYaCalificada();
+  if (motivo === "NO_UTILIZADA") throw new CalificacionNoPermitida();
+
+  const evento = eventosRepository.buscarPorId(compra.eventoId);
+  comprasRepository.calificar(
+    numero,
+    { puntaje, comentario: comentario ?? null, calificadaEn: momento.toISOString() },
+    { organizadorId: evento.organizadorId },
+  );
+  return conContexto(compra, momento);
+}
+
+/**
+ * Compra a recordar en Explorar (specs/006-calificaciones-opiniones/data-model.md § Compra pendiente de calificar,
+ * research R7): entre las del comprador que se pueden calificar, la del evento con fecha más reciente; a igual
+ * fecha, la de número mayor. null si no hay ninguna (FR-014).
+ */
+export function pendienteDeCalificar(compradorId) {
+  const momento = ahora();
+  const candidatas = comprasRepository
+    .listarPorComprador(compradorId)
+    .filter(puedeCalificar)
+    .map((compra) => ({ compra, evento: eventosRepository.buscarPorId(compra.eventoId) }));
+  if (candidatas.length === 0) return null;
+
+  candidatas.sort((a, b) => {
+    const diferencia = new Date(b.evento.fechaHora).getTime() - new Date(a.evento.fechaHora).getTime();
+    if (diferencia !== 0) return diferencia;
+    return a.compra.numero < b.compra.numero ? 1 : a.compra.numero > b.compra.numero ? -1 : 0;
+  });
+  return conContexto(candidatas[0].compra, momento);
 }

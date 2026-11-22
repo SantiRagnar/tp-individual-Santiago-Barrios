@@ -40,6 +40,7 @@
 - Solo compras **Utilizadas**, **una vez por compra**. Puntaje 1–5 obligatorio + comentario opcional (máx. 500 caracteres). Sin comentario se muestra "Sin comentario."
 - La calificación es **sobre el organizador** y se publica en los eventos de ese organizador con autor (nombre + inicial del apellido, p. ej. "Sofía G."), estrellas, evento y comentario.
 - Palabras del puntaje: 1 Malo, 2 Regular, 3 Bueno, 4 Muy bueno, 5 Excelente (sin elegir: "Elegí de 1 a 5 estrellas").
+- Feature 006: alcanza con que la compra esté **Utilizada** (no hace falta que haya pasado la hora del evento) y **no hay plazo** para calificar. La calificación no se edita ni se borra.
 
 ### Consultas (chat)
 - **Un chat por compra**, entre el comprador y el organizador del evento.
@@ -71,6 +72,7 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - **Chips de categoría:** Todos, Teatro, Comedia, Drama, Amor.
 - **Ordenar** (SegmentedControl): Fecha (más próxima primero, por defecto), Precio (menor precio "desde" primero), Puntaje (mejor puntaje del organizador primero).
 - **Recordatorio de calificación** (si hay una compra utilizada sin calificar): "Tu entrada fue utilizada — ¿Cómo fue tu experiencia en {evento}?", 5 estrellas, comentario "Contanos qué te pareció (opcional)", botón **Calificar** (deshabilitado sin estrellas). Al enviar: "Gracias, tu reseña ya es visible en los eventos del organizador."
+  - Feature 006: el recordatorio es de la compra cuyo evento es el más reciente (a igual fecha, la de número mayor). Se vuelve a pedir cada vez que se entra a Explorar; si no se puede cargar, no se muestra. Después de calificar, la lista se recarga para reflejar el puntaje nuevo.
 - Contador de resultados ("N eventos" / "1 evento").
 - Lista de **EventCard**: imagen, categoría, corazón de favorito, título, fecha corta, sala, "Desde $ X", puntaje · organizador, botón **Comprar** (va directo a Elegir entradas). Tocar la tarjeta abre el Detalle.
 - Vacío: "No encontramos eventos — Probá con otra búsqueda o categoría."
@@ -123,7 +125,7 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Lista de PurchaseCard: evento, fecha corta, "{tipo} × {cantidad}", Tag de estado, cuenta regresiva si está Confirmada, imagen (40% si Cancelada/Reembolsada).
 - Si está Utilizada: "Calificá tu experiencia" (→ Calificar experiencia) o, ya calificada, "Calificaste ★★★★☆".
 - Tocar una compra abre el Detalle de compra.
-- Feature 004: AppBar con Volver. "Calificá tu experiencia" se ve pero no tiene acción hasta la feature de calificaciones. Se recarga cada vez que se vuelve a la pantalla.
+- Feature 004: AppBar con Volver. Se recarga cada vez que se vuelve a la pantalla.
 - Vacío: "Todavía no compraste entradas — Cuando compres, vas a encontrarlas acá." + **Explorar eventos** (secundario).
 - Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato." + **Reintentar**.
 
@@ -137,7 +139,7 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Nota de por qué no se puede cancelar (si aplica).
 - Acciones: **Tengo una consulta** (secundario → Chat de la compra) y **Cancelar compra** (ghost, solo si se puede cancelar).
 - Dialog "¿Cancelar la compra?" con el texto de reintegro o liberación de entradas; botones **Volver** y **Cancelar compra**.
-- Feature 004: **Tengo una consulta** y **Calificar experiencia** se ven pero no tienen acción hasta sus features.
+- Feature 004: **Tengo una consulta** se ve pero no tiene acción hasta su feature.
 - Compra inexistente o de otro comprador: AppBar con Volver, "No encontramos esta compra." y **Volver a Mis compras** (secundario).
 - Volver: a la pantalla anterior; si se llegó con **Ver mi compra** desde Compra confirmada, a la pantalla donde se tocó **Comprar** (nunca al flujo de compra).
 
@@ -159,6 +161,10 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - **Puntaje**: 5 estrellas grandes + palabra (Malo … Excelente).
 - **Comentario (opcional)**: placeholder "Qué te gustó, qué mejorarías, cómo fue el ingreso…", contador "N/500".
 - Botón **Enviar calificación** (deshabilitado sin estrellas o si ya fue calificada). Al enviar vuelve al Detalle de compra.
+- Feature 006:
+  - Si la compra ya fue calificada se muestran la calificación guardada (estrellas sin acción y comentario) y la nota "Esta compra ya fue calificada."; si no está Utilizada, la nota "Solo podés calificar una entrada utilizada.". En los dos casos **Enviar calificación** queda deshabilitado.
+  - Al enviar desde el Detalle de compra se vuelve a él; desde Mis compras, la pantalla se reemplaza por el Detalle de esa compra (Volver lleva a Mis compras).
+  - Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato.", conservando estrellas y comentario. Compra inexistente o ajena: "No encontramos esta compra." + **Volver a Mis compras**.
 
 ---
 

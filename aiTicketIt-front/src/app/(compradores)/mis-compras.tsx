@@ -44,6 +44,8 @@ export default function MisCompras() {
   );
 
   const abrir = (numero: string) => router.push({ pathname: '/compras/[numero]', params: { numero } });
+  /** Feature 006: "Calificá tu experiencia" abre Calificar experiencia; al enviar, la reemplaza el Detalle. */
+  const calificar = (numero: string) => router.push({ pathname: '/compras/[numero]/calificar', params: { numero } });
 
   return (
     <SafeAreaView style={styles.pantalla} edges={['top']}>
@@ -66,7 +68,7 @@ export default function MisCompras() {
         <FlatList
           data={estado.compras}
           keyExtractor={(compra) => compra.numero}
-          renderItem={({ item }) => <PurchaseCard compra={item} onPress={() => abrir(item.numero)} />}
+          renderItem={({ item }) => <PurchaseCard compra={item} onPress={() => abrir(item.numero)} onCalificar={() => calificar(item.numero)} />}
           ItemSeparatorComponent={Separador}
           contentContainerStyle={styles.contenido}
           ListEmptyComponent={

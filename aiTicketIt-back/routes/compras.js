@@ -2,6 +2,7 @@ import { Router } from "express";
 import { comprasController as controller } from "../controllers/comprasController.js";
 import { requiereSesion } from "../middlewares/requiereSesion.js";
 import { validar } from "../middlewares/validar.js";
+import { calificacionSchema } from "../schemas/calificacionSchema.js";
 import { compraSchema } from "../schemas/compraSchema.js";
 
 /**
@@ -17,6 +18,8 @@ export function crearRouterCompras() {
   router.get("/:numero", controller.obtener);
   router.post("/:numero/pago", controller.completarPago);
   router.post("/:numero/cancelacion", controller.cancelar);
+  // Feature 006: calificar una compra Utilizada (specs/006-calificaciones-opiniones/contracts/calificaciones.openapi.yaml).
+  router.post("/:numero/calificacion", validar(calificacionSchema), controller.calificar);
 
   return router;
 }
@@ -25,6 +28,8 @@ export function crearRouterCompras() {
  * @openapi
  * tags:
  *   - name: Compras
+ *   - name: Calificaciones
+ *     description: Calificar compras utilizadas (feature 006)
  *
  * components:
  *   schemas:
@@ -36,7 +41,7 @@ export function crearRouterCompras() {
  *       enum: [Pendiente de pago, Confirmada, Utilizada, Cancelada, Reembolsada]
  *     Compra:
  *       type: object
- *       required: [numero, estado, cantidad, monto, medioDePago, creadaEn, tipoDeEntrada, evento, diasParaEvento, calificacion, acciones, motivoNoCancelable]
+ *       required: [numero, estado, cantidad, monto, medioDePago, creadaEn, tipoDeEntrada, evento, diasParaEvento, calificacion, acciones, motivoNoCancelable, motivoNoCalificable]
  *       properties:
  *         numero: { type: string, example: A-1042 }
  *         estado: { $ref: '#/components/schemas/EstadoCompra' }
@@ -83,14 +88,32 @@ export function crearRouterCompras() {
  *             calificadaEn: { type: string, format: date-time }
  *         acciones:
  *           type: object
- *           required: [completarPago, cancelar]
+ *           required: [completarPago, cancelar, calificar]
  *           properties:
  *             completarPago: { type: boolean }
  *             cancelar: { type: boolean }
+ *             calificar: { type: boolean, description: "Utilizada y sin calificar (feature 006)" }
  *         motivoNoCancelable:
  *           type: string
  *           nullable: true
  *           enum: [UTILIZADA, EVENTO_REALIZADO, REEMBOLSADA, CANCELADA, null]
+ *         motivoNoCalificable:
+ *           type: string
+ *           nullable: true
+ *           description: Por qué no se puede calificar (feature 006); null si se puede
+ *           enum: [YA_CALIFICADA, NO_UTILIZADA, null]
+ *     NuevaCalificacion:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [puntaje]
+ *       properties:
+ *         puntaje: { type: integer, minimum: 1, maximum: 5, example: 5 }
+ *         comentario:
+ *           type: string
+ *           nullable: true
+ *           maxLength: 500
+ *           description: Se recortan los espacios; vacío o solo espacios se guarda como null. El límite se cuenta después de recortar.
+ *           example: Hermosa puesta, el conventillo le suma muchísimo.
  *     NuevaCompra:
  *       type: object
  *       required: [eventoId, tipoDeEntradaId, cantidad, medioDePago, precioUnitario]
@@ -237,4 +260,41 @@ export function crearRouterCompras() {
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Error' }
  *             example: { error: { codigo: CANCELACION_NO_PERMITIDA, mensaje: "Esta compra no se puede cancelar." } }
+ *
+ * /compradores/compras/{numero}/calificacion:
+ *   parameters:
+ *     - { name: numero, in: path, required: true, schema: { type: string }, example: A-0871 }
+ *   post:
+ *     tags: [Calificaciones]
+ *     summary: Calificar una compra Utilizada (una sola vez)
+ *     description: >
+ *       Guarda el puntaje (1 a 5) y el comentario opcional en la compra y lo publica como reseña del organizador
+ *       del evento (feature 006, FR-002 a FR-005). Alcanza con que esté Utilizada: no hay condición de fecha ni
+ *       plazo. Con pedidos simultáneos sobre la misma compra se guarda uno solo y el resto responde 409
+ *       COMPRA_YA_CALIFICADA (research R6). Una compra ajena responde igual que una inexistente.
+ *     security: [{ bearer: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/NuevaCalificacion' }
+ *     responses:
+ *       201:
+ *         description: Compra calificada
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/RespuestaCompra' }
+ *       400: { $ref: '#/components/responses/DatosInvalidos' }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404: { $ref: '#/components/responses/CompraNoEncontrada' }
+ *       409:
+ *         description: La compra ya fue calificada (COMPRA_YA_CALIFICADA) o no está Utilizada (CALIFICACION_NO_PERMITIDA)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *             examples:
+ *               yaCalificada:
+ *                 value: { error: { codigo: COMPRA_YA_CALIFICADA, mensaje: "Esta compra ya fue calificada." } }
+ *               noUtilizada:
+ *                 value: { error: { codigo: CALIFICACION_NO_PERMITIDA, mensaje: "Solo podés calificar una entrada utilizada." } }
  */

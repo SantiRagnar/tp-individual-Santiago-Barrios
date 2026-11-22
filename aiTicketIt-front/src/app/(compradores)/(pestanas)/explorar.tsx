@@ -1,9 +1,10 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listarEventos, type CriterioExplorar, type Orden } from '@/api/compradores';
+import { obtenerPendienteDeCalificar, type Compra } from '@/api/compras';
 import { CATEGORIAS, type Categoria } from '@/api/eventos';
 import { Avatar } from '@/components/ds/Avatar';
 import { BottomSheet } from '@/components/ds/BottomSheet';
@@ -12,10 +13,12 @@ import { Button } from '@/components/ds/Button';
 import { CampoBusqueda } from '@/components/ds/CampoBusqueda';
 import { FilaDeChips } from '@/components/ds/Chip';
 import { MenuPerfil } from '@/components/ds/MenuPerfil';
+import { RecordatorioCalificacion } from '@/components/ds/RecordatorioCalificacion';
 import { EstadoVacio } from '@/components/ds/EstadoVacio';
 import { EventCard, EventCardEsqueleto } from '@/components/ds/EventCard';
 import { SegmentedControl } from '@/components/ds/SegmentedControl';
 import { useListaPaginada } from '@/hooks/useListaPaginada';
+import { versionCalificaciones } from '@/lib/calificacionesRecientes';
 import { contadorEventos } from '@/lib/formato';
 import { useSesion } from '@/sesion/SesionProvider';
 import { color, size, space, type } from '@/theme/tokens';
@@ -58,6 +61,37 @@ export default function Explorar() {
   );
   const lista = useListaPaginada(pedirPagina, JSON.stringify(criterio));
 
+  // Feature 006 (SC-002): si se guardó una calificación desde la última carga (acá o en Calificar experiencia),
+  // al volver a Explorar se recarga la lista para mostrar el puntaje y el orden nuevos. Si no, se conserva.
+  const versionVista = useRef(versionCalificaciones());
+  const { refrescar } = lista;
+
+  // Recordatorio de calificación (feature 006, FR-014 a FR-016): se pide cada vez que se entra a Explorar.
+  // Si falla, no se muestra. Después de calificar, la confirmación queda hasta el próximo foco.
+  const [pendiente, setPendiente] = useState<Compra | null>(null);
+  const pedirPendiente = useCallback(
+    (vigente: () => boolean = () => true) =>
+      obtenerPendienteDeCalificar(token).then(
+        (compra) => vigente() && setPendiente(compra),
+        () => vigente() && setPendiente(null),
+      ),
+    [token],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let vigente = true;
+      void pedirPendiente(() => vigente);
+      if (versionVista.current !== versionCalificaciones()) {
+        versionVista.current = versionCalificaciones();
+        refrescar();
+      }
+      return () => {
+        vigente = false;
+      };
+    }, [pedirPendiente, refrescar]),
+  );
+
   if (!comprador) return null;
   const { nombre, apellido } = comprador.comprador;
   const abrir = (id: string) => router.push({ pathname: '/eventos/[id]', params: { id } });
@@ -79,6 +113,14 @@ export default function Explorar() {
       <CampoBusqueda value={texto} onChangeText={setTexto} placeholder="Buscar evento, sala u organizador" />
       <FilaDeChips opciones={CATEGORIAS} valor={categoria} onCambiar={setCategoria} />
       <SegmentedControl etiqueta="Ordenar por" opciones={ORDENES} valor={orden} onCambiar={setOrden} />
+      {pendiente ? (
+        <RecordatorioCalificacion key={pendiente.numero} token={token} compra={pendiente} onDesactualizado={() => void pedirPendiente()}
+          onCalificada={() => {
+            versionVista.current = versionCalificaciones();
+            refrescar();
+          }}
+        />
+      ) : null}
       {!lista.cargando && lista.error !== 'inicial' ? (
         <Text style={[type.caption, { color: color.textMuted }]} accessibilityLiveRegion="polite">
           {contadorEventos(lista.total)}

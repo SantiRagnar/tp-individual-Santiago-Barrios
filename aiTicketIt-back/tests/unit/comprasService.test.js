@@ -200,3 +200,98 @@ describe("comprasService.cancelar (US5)", () => {
     assert.equal(tipo("evt-1", "tip-2").vendidas, 68);
   });
 });
+
+// specs/006-calificaciones-opiniones: research R3, R6; data-model.md § Compra · transición nueva.
+/** Guarda una compra Utilizada sin calificar de `compradorId` en un evento nuevo y devuelve su número. */
+function utilizadaEnEventoNuevo({ compradorId = SOFIA, numero = "A-5000", fecha = "2027-02-01T21:00:00-03:00", organizadorId = "org-1" } = {}) {
+  const { eventoId, tipoId } = crearEventoConCupo({ fecha, organizadorId, vendidas: 1 });
+  comprasRepository.guardar(
+    {
+      numero,
+      compradorId,
+      eventoId,
+      tipoDeEntradaId: tipoId,
+      tipoDeEntradaNombre: "General",
+      precioUnitario: 10000,
+      cantidad: 1,
+      monto: 10000,
+      medioDePago: "Tarjeta de débito",
+      estado: "Utilizada",
+      creadaEn: "2026-11-01T10:00:00-03:00",
+    },
+    { organizadorId },
+  );
+  return numero;
+}
+
+describe("comprasService.calificar (feature 006 · US1)", () => {
+  it("califica A-0871 con calificadaEn = ahora y suma al resumen de Lumbre", () => {
+    const { compra, organizador } = comprasService.calificar(SOFIA, "A-0871", { puntaje: 5, comentario: "Hermosa" });
+    assert.deepEqual({ ...compra.calificacion }, { puntaje: 5, comentario: "Hermosa", calificadaEn: HOY.toISOString() });
+    assert.equal(organizador.id, "org-3");
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-3"), { suma: 13, cantidad: 3 });
+  });
+
+  it("no devuelve una Promise (research R6)", () => {
+    assert.equal(comprasService.calificar(SOFIA, "A-0871", { puntaje: 3, comentario: null }) instanceof Promise, false);
+  });
+
+  it("ya calificada → CompraYaCalificada y conserva la calificación original", () => {
+    comprasService.calificar(SOFIA, "A-0871", { puntaje: 2, comentario: "Primera" });
+    assert.equal(nombreDelError(() => comprasService.calificar(SOFIA, "A-0871", { puntaje: 5, comentario: "Segunda" })), "CompraYaCalificada");
+    assert.equal(nombreDelError(() => comprasService.calificar(SOFIA, "A-0655", { puntaje: 1, comentario: null })), "CompraYaCalificada");
+    assert.equal(comprasRepository.buscarPorNumero("A-0871").calificacion.comentario, "Primera");
+    assert.equal(comprasRepository.buscarPorNumero("A-0655").calificacion.puntaje, 4);
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-3"), { suma: 10, cantidad: 3 });
+  });
+
+  it("no Utilizada → CalificacionNoPermitida", () => {
+    for (const numero of ["A-1042", "A-1037", "A-0790"]) {
+      assert.equal(nombreDelError(() => comprasService.calificar(SOFIA, numero, { puntaje: 4, comentario: null })), "CalificacionNoPermitida", numero);
+    }
+  });
+
+  it("ajena o inexistente → CompraNoEncontrada", () => {
+    assert.equal(nombreDelError(() => comprasService.calificar(MARTIN, "A-0871", { puntaje: 4, comentario: null })), "CompraNoEncontrada");
+    assert.equal(nombreDelError(() => comprasService.calificar(SOFIA, "A-9999", { puntaje: 4, comentario: null })), "CompraNoEncontrada");
+  });
+
+  it("una Utilizada de un evento todavía futuro también se puede calificar (sin condición de fecha)", () => {
+    const numero = utilizadaEnEventoNuevo();
+    const { compra } = comprasService.calificar(SOFIA, numero, { puntaje: 4, comentario: null });
+    assert.equal(compra.calificacion.puntaje, 4);
+  });
+});
+
+// specs/006-calificaciones-opiniones: data-model.md § Compra pendiente de calificar (research R7, FR-014).
+describe("comprasService.pendienteDeCalificar (feature 006 · US3)", () => {
+  it("Sofía → A-0871 (su única Utilizada sin calificar en el seed)", () => {
+    const pendiente = comprasService.pendienteDeCalificar(SOFIA);
+    assert.equal(pendiente.compra.numero, "A-0871");
+    assert.equal(pendiente.evento.nombre, "Tango en el Conventillo");
+  });
+
+  it("sin compras pendientes → null", () => {
+    comprasService.calificar(SOFIA, "A-0871", { puntaje: 4, comentario: null });
+    assert.equal(comprasService.pendienteDeCalificar(SOFIA), null);
+    assert.equal(comprasService.pendienteDeCalificar("cmp-99"), null);
+  });
+
+  it("con varias, la del evento con fecha más reciente", () => {
+    utilizadaEnEventoNuevo({ numero: "A-5000", fecha: "2026-11-01T21:00:00-03:00" });
+    utilizadaEnEventoNuevo({ numero: "A-5001", fecha: "2026-08-01T21:00:00-03:00" });
+    assert.equal(comprasService.pendienteDeCalificar(SOFIA).compra.numero, "A-5000");
+  });
+
+  it("a igual fecha de evento, la de número mayor", () => {
+    utilizadaEnEventoNuevo({ numero: "A-5000", fecha: "2026-11-01T21:00:00-03:00" });
+    utilizadaEnEventoNuevo({ numero: "A-5001", fecha: "2026-11-01T21:00:00-03:00" });
+    assert.equal(comprasService.pendienteDeCalificar(SOFIA).compra.numero, "A-5001");
+  });
+
+  it("ignora las calificadas, las de otros estados y las de otros compradores", () => {
+    utilizadaEnEventoNuevo({ numero: "A-5000", compradorId: MARTIN, fecha: "2026-11-05T21:00:00-03:00" });
+    assert.equal(comprasService.pendienteDeCalificar(SOFIA).compra.numero, "A-0871");
+    assert.equal(comprasService.pendienteDeCalificar(MARTIN).compra.numero, "A-5000");
+  });
+});

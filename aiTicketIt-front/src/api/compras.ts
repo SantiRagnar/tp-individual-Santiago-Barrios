@@ -5,6 +5,8 @@ import { pedir } from '@/api/cliente';
 export type MedioDePago = 'Tarjeta de crédito' | 'Tarjeta de débito' | 'Mercado Pago' | 'Transferencia';
 export type EstadoCompra = 'Pendiente de pago' | 'Confirmada' | 'Utilizada' | 'Cancelada' | 'Reembolsada';
 export type MotivoNoCancelable = 'UTILIZADA' | 'EVENTO_REALIZADO' | 'REEMBOLSADA' | 'CANCELADA';
+/** specs/006-calificaciones-opiniones/data-model.md § Vista Compra `motivoNoCalificable`. */
+export type MotivoNoCalificable = 'YA_CALIFICADA' | 'NO_UTILIZADA';
 
 /** En el orden del diseño (Compradores 06). */
 export const MEDIOS_DE_PAGO: MedioDePago[] = ['Tarjeta de crédito', 'Tarjeta de débito', 'Mercado Pago', 'Transferencia'];
@@ -29,9 +31,13 @@ export type Compra = {
   /** Solo Confirmadas de eventos futuros; si no, null. */
   diasParaEvento: number | null;
   calificacion: { puntaje: number; comentario: string | null; calificadaEn: string } | null;
-  acciones: { completarPago: boolean; cancelar: boolean };
+  /** `calificar`: Utilizada y sin calificar (data-model.md § Vista Compra `acciones.calificar`, feature 006). */
+  acciones: { completarPago: boolean; cancelar: boolean; calificar: boolean };
   motivoNoCancelable: MotivoNoCancelable | null;
+  motivoNoCalificable: MotivoNoCalificable | null;
 };
+
+export type NuevaCalificacion = { puntaje: number; comentario: string | null };
 
 export type NuevaCompra = {
   eventoId: string;
@@ -78,5 +84,25 @@ export async function cancelarCompra(token: string, numero: string): Promise<Com
     token,
     ...COMPRADOR,
   });
+  return compra;
+}
+
+/**
+ * Calificar una compra Utilizada, una sola vez (specs/006-calificaciones-opiniones/contracts/calificaciones.openapi.yaml).
+ * 409 COMPRA_YA_CALIFICADA / CALIFICACION_NO_PERMITIDA, 404 si es ajena o no existe.
+ */
+export async function calificarCompra(token: string, numero: string, calificacion: NuevaCalificacion): Promise<Compra> {
+  const { compra } = await pedir<{ compra: Compra }>(`/compradores/compras/${encodeURIComponent(numero)}/calificacion`, {
+    metodo: 'POST',
+    body: calificacion,
+    token,
+    ...COMPRADOR,
+  });
+  return compra;
+}
+
+/** Compra a recordar en Explorar: Utilizada sin calificar del evento más reciente, o null (feature 006, research R7). */
+export async function obtenerPendienteDeCalificar(token: string): Promise<Compra | null> {
+  const { compra } = await pedir<{ compra: Compra | null }>('/compradores/calificaciones/pendiente', { token, ...COMPRADOR });
   return compra;
 }

@@ -22,7 +22,7 @@ describe("POST /compradores/compras/:numero/pago — US4", () => {
     assert.equal(res.status, 200);
     assert.equal(res.body.compra.estado, "Confirmada");
     assert.equal(res.body.compra.diasParaEvento, 6);
-    assert.deepEqual(res.body.compra.acciones, { completarPago: false, cancelar: true });
+    assert.deepEqual(res.body.compra.acciones, { completarPago: false, cancelar: true, calificar: false });
   });
 
   it("repetirlo → 409 PAGO_NO_PERMITIDO", async () => {

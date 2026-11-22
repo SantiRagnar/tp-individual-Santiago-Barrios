@@ -96,6 +96,8 @@ export function useListaPaginada<T extends { id: string }>(
     setIntento((i) => i + 1);
   }, [estado.error, cargarMas]);
 
+  const refrescar = useCallback(() => setIntento((i) => i + 1), []);
+
   return {
     items: vigente ? estado.items : [],
     total: vigente ? estado.total : 0,
@@ -111,6 +113,11 @@ export function useListaPaginada<T extends { id: string }>(
     /** Quita un elemento ya cargado sin volver a pedir (p. ej. una venta que dejó de cumplir el filtro). */
     quitar: (id: string) =>
       setEstado((e) => ({ ...e, items: e.items.filter((item) => item.id !== id), total: Math.max(0, e.total - 1) })),
+    /**
+     * Vuelve a pedir la primera página sin vaciar la lista (sin esqueletos): los datos se reemplazan cuando
+     * llega la respuesta. Lo usa Explorar después de una calificación nueva (feature 006, SC-002).
+     */
+    refrescar,
     /** Vuelve a pedir la primera página del criterio actual (p. ej. después de un 409). */
     recargar: () => {
       setEstado(VACIO);
