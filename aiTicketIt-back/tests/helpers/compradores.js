@@ -34,16 +34,19 @@ let ultimaCompra = 0;
 
 export function crearComprasCalificadas(organizadorId, eventoId, n, { desde = "2026-10-01T10:00:00-03:00", compradorId = "cmp-2", puntaje = 5 } = {}) {
   const inicio = new Date(desde).getTime();
-  const tipoDeEntradaId = eventosRepository.buscarPorId(eventoId).tiposDeEntrada[0].id;
+  const tipo = eventosRepository.buscarPorId(eventoId).tiposDeEntrada[0];
   return Array.from({ length: n }, (_, i) =>
     comprasRepository.guardar(
       {
         numero: `B-${String(++ultimaCompra).padStart(4, "0")}`,
         compradorId,
         eventoId,
-        tipoDeEntradaId,
+        tipoDeEntradaId: tipo.id,
+        // Copia del tipo (feature 004, data-model.md Compra.tipoDeEntradaNombre, Compra.precioUnitario).
+        tipoDeEntradaNombre: tipo.nombre,
+        precioUnitario: tipo.precio,
         cantidad: 1,
-        monto: 10000,
+        monto: tipo.precio,
         medioDePago: "Mercado Pago",
         estado: "Utilizada",
         creadaEn: desde,

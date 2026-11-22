@@ -168,3 +168,68 @@ describe("comprasRepository.listarPorEvento y todasDelEvento", () => {
     assert.ok(comprasRepository.todasDelEvento("evt-7").some((c) => c.numero === "A-0655"));
   });
 });
+
+// Feature 004: specs/004-compra-pago-mis-compras/data-model.md § Operaciones nuevas del repositorio (research R8).
+describe("comprasRepository.siguienteNumero (feature 004)", () => {
+  it("continúa después del mayor número del seed (A-1042)", () => {
+    assert.equal(comprasRepository.siguienteNumero(), "A-1043");
+    assert.equal(comprasRepository.siguienteNumero(), "A-1044");
+  });
+
+  it("después de A-9999 sigue con A-10000 (al menos 4 dígitos)", () => {
+    comprasRepository.guardar({ ...calificada("A-9999", "2026-09-30T10:00:00-03:00"), calificacion: null }, { organizadorId: "org-1" });
+    assert.equal(comprasRepository.siguienteNumero(), "A-10000");
+  });
+
+  it("reiniciar vuelve el contador al seed", () => {
+    comprasRepository.siguienteNumero();
+    comprasRepository.reiniciar();
+    assert.equal(comprasRepository.siguienteNumero(), "A-1043");
+  });
+});
+
+describe("comprasRepository.listarPorComprador (feature 004)", () => {
+  it("las compras de Sofía de la más nueva a la más antigua", () => {
+    const numeros = comprasRepository.listarPorComprador("cmp-1").map((c) => c.numero);
+    assert.deepEqual(numeros, ["A-1042", "A-1037", "A-0871", "A-0790", "A-0655"]);
+  });
+
+  it("un comprador sin compras devuelve una lista vacía", () => {
+    assert.deepEqual(comprasRepository.listarPorComprador("cmp-99"), []);
+  });
+
+  it("una compra nueva entra al índice del comprador, primera si es la más nueva", () => {
+    comprasRepository.guardar(
+      { ...calificada("A-1043", "x"), estado: "Confirmada", calificacion: null, creadaEn: "2026-11-09T12:00:00-03:00" },
+      { organizadorId: "org-3" },
+    );
+    assert.equal(comprasRepository.listarPorComprador("cmp-1")[0].numero, "A-1043");
+  });
+
+  it("a igual fecha desempata por número descendente", () => {
+    const creadaEn = "2026-11-08T10:00:00-03:00";
+    for (const numero of ["A-2001", "A-2002"]) {
+      comprasRepository.guardar({ ...calificada(numero, "x"), compradorId: "cmp-90", calificacion: null, creadaEn }, { organizadorId: "org-1" });
+    }
+    assert.deepEqual(comprasRepository.listarPorComprador("cmp-90").map((c) => c.numero), ["A-2002", "A-2001"]);
+  });
+});
+
+describe("compras del seed de Sofía (feature 004)", () => {
+  it("tienen la copia del tipo de entrada: nombre y precio unitario", () => {
+    const a1042 = comprasRepository.buscarPorNumero("A-1042");
+    assert.equal(a1042.tipoDeEntradaNombre, "Platea");
+    assert.equal(a1042.precioUnitario, 18000);
+    assert.equal(a1042.estado, "Confirmada");
+    assert.equal(comprasRepository.buscarPorNumero("A-1037").estado, "Pendiente de pago");
+    assert.equal(comprasRepository.buscarPorNumero("A-0871").calificacion, null);
+    assert.equal(comprasRepository.buscarPorNumero("A-0790").estado, "Reembolsada");
+    assert.equal(comprasRepository.buscarPorNumero("A-0655").tipoDeEntradaNombre, "General");
+  });
+
+  it("los resúmenes de calificaciones de la feature 003 no cambian", () => {
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-1"), { suma: 18, cantidad: 4 });
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-3"), { suma: 8, cantidad: 2 });
+    assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-2"), { suma: 11, cantidad: 3 });
+  });
+});

@@ -86,12 +86,30 @@ export function contadorResenas(n: number): string {
   return n === 1 ? '1 reseña de eventos anteriores' : `${miles(n)} reseñas de eventos anteriores`;
 }
 
-// Panel del evento (feature 005, contracts/rutas-front.md § Organizadores 04).
+// Feature 004 (specs/004-compra-pago-mis-compras/research.md R13).
+
+/** 13 → "Faltan 13 días"; 1 → "Falta 1 día". Con `paraElEvento`: "Faltan 13 días para el evento." */
+export function cuentaRegresiva(dias: number, { paraElEvento = false }: { paraElEvento?: boolean } = {}): string {
+  const texto = dias === 1 ? 'Falta 1 día' : `Faltan ${miles(dias)} días`;
+  return paraElEvento ? `${texto} para el evento.` : texto;
+}
+
+/** ("Platea", 2) → "Platea × 2". */
+export function entradas(tipo: string, cantidad: number): string {
+  return `${tipo} × ${cantidad}`;
+}
 
 /** "A-1042" → "#A-1042". */
 export function numeroCompra(numero: string): string {
   return `#${numero}`;
 }
+
+/** ISO → "Sábado 21 de noviembre · 21:00 h" en hora local. */
+export function fechaYHoraLarga(iso: string): string {
+  return `${fechaLarga(iso)} · ${hora(iso)}`;
+}
+
+// Panel del evento (feature 005, contracts/rutas-front.md § Organizadores 04).
 
 /** 1 → "1 entrada vendida"; 154 → "154 entradas vendidas". */
 export function textoEntradasVendidas(n: number): string {

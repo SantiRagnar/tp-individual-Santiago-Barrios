@@ -1,9 +1,10 @@
+import type { EstadoCompra, MedioDePago } from './compras';
 import { pedir } from './cliente';
 
 // Ventas del evento para el panel del organizador (specs/005-panel-evento/contracts/ventas.openapi.yaml).
 
-export type EstadoCompra = 'Pendiente de pago' | 'Confirmada' | 'Utilizada' | 'Cancelada' | 'Reembolsada';
-export type MedioDePago = 'Tarjeta de crédito' | 'Tarjeta de débito' | 'Mercado Pago' | 'Transferencia';
+// Los estados y medios de pago son los mismos que los de la compra (feature 004).
+export type { EstadoCompra, MedioDePago };
 
 export type Venta = {
   numero: string;

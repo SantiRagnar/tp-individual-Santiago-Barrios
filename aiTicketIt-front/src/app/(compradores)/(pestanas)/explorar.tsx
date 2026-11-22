@@ -1,15 +1,17 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listarEventos, type CriterioExplorar, type Orden } from '@/api/compradores';
 import { CATEGORIAS, type Categoria } from '@/api/eventos';
 import { Avatar } from '@/components/ds/Avatar';
+import { BottomSheet } from '@/components/ds/BottomSheet';
 import { BotonFavorito } from '@/components/ds/BotonFavorito';
 import { Button } from '@/components/ds/Button';
 import { CampoBusqueda } from '@/components/ds/CampoBusqueda';
 import { FilaDeChips } from '@/components/ds/Chip';
+import { MenuPerfil } from '@/components/ds/MenuPerfil';
 import { EstadoVacio } from '@/components/ds/EstadoVacio';
 import { EventCard, EventCardEsqueleto } from '@/components/ds/EventCard';
 import { SegmentedControl } from '@/components/ds/SegmentedControl';
@@ -31,8 +33,9 @@ const ORDENES: { valor: Orden; etiqueta: string }[] = [
 
 /** Compradores 02 · Explorar (specs/003-explorar-detalle-evento/contracts/rutas-front.md). */
 export default function Explorar() {
-  const { comprador } = useSesion();
+  const { comprador, cerrarSesion } = useSesion();
   const token = comprador?.token ?? '';
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState('');
@@ -68,7 +71,10 @@ export default function Explorar() {
           </Text>
           <Text style={[type.body, { color: color.textLabel }]}>¿Qué querés ver?</Text>
         </View>
-        <Avatar nombre={`${nombre} ${apellido}`} tamano={size.avatarMd} />
+        {/* El Avatar abre el Menú de perfil (Compradores 03, feature 004). */}
+        <Pressable onPress={() => setMenuAbierto(true)} accessibilityRole="button" accessibilityLabel="Abrir menú de perfil" hitSlop={4}>
+          <Avatar nombre={`${nombre} ${apellido}`} tamano={size.avatarMd} />
+        </Pressable>
       </View>
       <CampoBusqueda value={texto} onChangeText={setTexto} placeholder="Buscar evento, sala u organizador" />
       <FilaDeChips opciones={CATEGORIAS} valor={categoria} onCambiar={setCategoria} />
@@ -109,6 +115,7 @@ export default function Explorar() {
           <EventCard
             evento={item}
             onPress={() => abrir(item.id)}
+            onComprar={() => router.push({ pathname: '/eventos/[id]/entradas', params: { id: item.id } })}
             accionSuperior={<BotonFavorito eventoId={item.id} segunServidor={item.esFavorito} fondo />}
           />
         )}
@@ -121,6 +128,23 @@ export default function Explorar() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.contenido}
       />
+      <BottomSheet visible={menuAbierto} onCerrar={() => setMenuAbierto(false)}>
+        <MenuPerfil
+          nombreCompleto={`${nombre} ${apellido}`}
+          onMisCompras={() => {
+            setMenuAbierto(false);
+            router.push('/mis-compras');
+          }}
+          onFavoritos={() => {
+            setMenuAbierto(false);
+            router.navigate('/favoritos');
+          }}
+          onCerrarSesion={() => {
+            setMenuAbierto(false);
+            void cerrarSesion('comprador');
+          }}
+        />
+      </BottomSheet>
     </SafeAreaView>
   );
 }

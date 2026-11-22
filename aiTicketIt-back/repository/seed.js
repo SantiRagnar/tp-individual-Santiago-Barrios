@@ -219,6 +219,8 @@ export const imagenesSeed = ["hamlet", "risas", "bodas", "cartas", "impro", "tan
  * Compras Utilizadas y calificadas (specs/003-explorar-detalle-evento/data-model.md § Seed, research R17).
  * La calificación vive en la compra (research R7). Promedios: La Trama 4.5, Lumbre 4.0, Club del Chiste 3.7.
  * Las vendidas de los tipos de entrada no se recalculan: el generador de abajo completa las compras que faltan.
+ * `tipoDeEntradaNombre` y `precioUnitario` (copia del tipo, research R6 de la 004) los completa
+ * comprasRepository.reiniciar() desde el evento.
  */
 const compraCalificada = (numero, compradorId, eventoId, tipoDeEntradaId, cantidad, monto, medioDePago, dia, puntaje, comentario) => ({
   numero,

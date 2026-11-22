@@ -24,6 +24,8 @@ type Props = {
   onPress: () => void;
   /** Acción arriba a la derecha de la imagen (el corazón de favorito). */
   accionSuperior?: ReactNode;
+  /** Comprar → Elegir entradas (feature 004, FR-003). */
+  onComprar: () => void;
 };
 
 /**
@@ -31,7 +33,7 @@ type Props = {
  * Detalle; el corazón y Comprar son acciones propias. Para que sigan siendo botones accesibles no se
  * anidan dentro del área tocable principal: el corazón va encima de la imagen y Comprar en el pie (research R14).
  */
-export function EventCard({ evento, onPress, accionSuperior }: Props) {
+export function EventCard({ evento, onPress, accionSuperior, onComprar }: Props) {
   const fecha = fechaCorta(evento.fechaHora);
   const organizador = textoOrganizador(evento.organizador);
   const desde = `Desde ${plata(evento.precioDesde)}`;
@@ -82,8 +84,7 @@ export function EventCard({ evento, onPress, accionSuperior }: Props) {
             Agotado
           </Button>
         ) : (
-          // Sin acción hasta la feature de compra (FR-009).
-          <Button variante="primary" onPress={() => {}}>
+          <Button variante="primary" onPress={onComprar}>
             Comprar
           </Button>
         )}

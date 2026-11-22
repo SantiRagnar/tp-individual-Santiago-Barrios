@@ -5,7 +5,7 @@ import { useSesion } from '@/sesion/SesionProvider';
 import { color } from '@/theme/tokens';
 
 /**
- * Lado compradores (contracts/rutas-front.md). Solo mira la sesión de comprador (FR-016).
+ * Lado compradores (contracts/rutas-front.md de las features 003 y 004). Solo mira la sesión de comprador (FR-016).
  * Si el guard de una pantalla no se cumple, el router lleva a la primera disponible.
  * FavoritosProvider comparte el corazón entre pantallas; con `key` se reinicia al cambiar de comprador.
  */
@@ -20,7 +20,12 @@ export default function CompradoresLayout() {
       </Stack.Protected>
       <Stack.Protected guard={!!comprador}>
         <Stack.Screen name="(pestanas)" />
-        <Stack.Screen name="eventos/[id]" />
+        <Stack.Screen name="eventos/[id]/index" />
+        <Stack.Screen name="eventos/[id]/entradas" />
+        <Stack.Screen name="eventos/[id]/pago" />
+        <Stack.Screen name="compras/[numero]/confirmada" />
+        <Stack.Screen name="compras/[numero]/index" />
+        <Stack.Screen name="mis-compras" />
       </Stack.Protected>
     </Stack>
     </FavoritosProvider>
