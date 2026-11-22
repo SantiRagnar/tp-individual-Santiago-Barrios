@@ -73,7 +73,7 @@ describe("eventosService — listar (research R15, R16)", () => {
   });
 
   it("no mezcla organizadores", () => {
-    assert.deepEqual(eventosService.listar("org-2").map((e) => e.id), ["evt-2", "evt-5"]);
+    assert.deepEqual(eventosService.listar("org-2").map((e) => e.id), ["evt-2", "evt-5", "evt-9"]);
     assert.deepEqual(eventosService.listar("org-99"), []);
   });
 });
@@ -127,20 +127,20 @@ describe("eventosService — crear (FR-011, FR-012, FR-015, FR-016)", () => {
     );
   });
 
-  it("Publicado válido asigna evt-9, tipos nuevos con 0 vendidas, el organizador de la sesión y creadoEn", () => {
+  it("Publicado válido asigna evt-10, tipos nuevos con 0 vendidas, el organizador de la sesión y creadoEn", () => {
     const evento = eventosService.crear("org-1", entradaValida());
-    assert.equal(evento.id, "evt-9");
+    assert.equal(evento.id, "evt-10");
     assert.equal(evento.organizadorId, "org-1"); // Evento.organizadorId
     assert.equal(evento.estado, "Publicado");
     assert.equal(evento.creadoEn, HOY.toISOString()); // Evento.creadoEn
     assert.deepEqual(
       evento.tiposDeEntrada.map((t) => [t.id, t.nombre, t.vendidas]), // TipoDeEntrada.vendidas
       [
-        ["tip-14", "General", 0],
-        ["tip-15", "Platea", 0],
+        ["tip-15", "General", 0],
+        ["tip-16", "Platea", 0],
       ],
     );
-    assert.equal(eventosService.obtener("org-1", "evt-9").nombre, "Las brujas de Salem");
+    assert.equal(eventosService.obtener("org-1", "evt-10").nombre, "Las brujas de Salem");
   });
 
   it("ignora los id y las vendidas que mande el cliente", () => {
@@ -148,7 +148,7 @@ describe("eventosService — crear (FR-011, FR-012, FR-015, FR-016)", () => {
       "org-1",
       entradaValida({ tiposDeEntrada: [{ id: "tip-1", nombre: "General", cupo: 10, precio: 1, vendidas: 9 }] }),
     );
-    assert.equal(evento.tiposDeEntrada[0].id, "tip-14");
+    assert.equal(evento.tiposDeEntrada[0].id, "tip-15");
     assert.equal(evento.tiposDeEntrada[0].vendidas, 0);
     assert.equal(eventosRepository.buscarPorId("evt-1").tiposDeEntrada[0].vendidas, 66);
   });
@@ -268,7 +268,7 @@ describe("eventosService — editar con ventas (US4, FR-019, FR-020)", () => {
       "evt-3",
       bodas({ tiposDeEntrada: [...bodas().tiposDeEntrada, { nombre: "VIP", cupo: 20, precio: 30000 }] }),
     );
-    assert.deepEqual({ ...evento.tiposDeEntrada[2] }, { id: "tip-14", nombre: "VIP", cupo: 20, precio: 30000, vendidas: 0 });
+    assert.deepEqual({ ...evento.tiposDeEntrada[2] }, { id: "tip-15", nombre: "VIP", cupo: 20, precio: 30000, vendidas: 0 });
   });
 
   it("un error de ventas y uno de publicación salen juntos en un solo DatosInvalidos", () => {

@@ -2,7 +2,7 @@ import { CalendarBlank, MapPin } from 'phosphor-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ds/Button';
-import { ImagenDeEvento } from '@/components/ds/EventManageCard';
+import { ImagenDeEvento } from '@/components/ds/ImagenEvento';
 import { Tag } from '@/components/ds/Tag';
 import { fechaCorta, miles, plata } from '@/lib/formato';
 import { aNumero, type FormEvento } from '@/lib/validacionEvento';

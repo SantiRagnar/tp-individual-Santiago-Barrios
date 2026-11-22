@@ -2,7 +2,9 @@ import cors from "cors";
 import express from "express";
 import swaggerDocs from "./swagger.js";
 import { manejadorDeErrores } from "./errors/manejadorDeErrores.js";
+import { crearRouterEventosComprador, crearRouterOrganizadoresComprador } from "./routes/eventosComprador.js";
 import { crearRouterEventosOrganizador } from "./routes/eventosOrganizador.js";
+import { crearRouterFavoritos } from "./routes/favoritos.js";
 import { crearRouterImagenes, crearRouterSubidaDeImagenes } from "./routes/imagenes.js";
 import { crearRouterSesiones } from "./routes/sesiones.js";
 
@@ -36,6 +38,9 @@ app.get("/health", (req, res) => {
 
 app.use("/compradores/sesiones", crearRouterSesiones("comprador"));
 app.use("/organizadores/sesiones", crearRouterSesiones("organizador"));
+app.use("/compradores/eventos", crearRouterEventosComprador());
+app.use("/compradores/organizadores", crearRouterOrganizadoresComprador());
+app.use("/compradores/favoritos", crearRouterFavoritos());
 app.use("/organizadores/eventos", crearRouterEventosOrganizador());
 app.use("/organizadores/imagenes", crearRouterSubidaDeImagenes());
 app.use("/imagenes", crearRouterImagenes());

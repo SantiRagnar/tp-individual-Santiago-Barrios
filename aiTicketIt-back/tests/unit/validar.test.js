@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { z } from "zod";
 import { validar } from "../../middlewares/validar.js";
+import { validarQuery } from "../../middlewares/validarQuery.js";
 import { DatosInvalidos } from "../../errors/ErrorDeDominio.js";
 
 /** Corre el middleware y devuelve el error que pasa a next() (o undefined). */
@@ -49,5 +50,35 @@ describe("validar (research R5)", () => {
     const { req, error } = correr(schema, { email: "  a@b.com " });
     assert.equal(error, undefined);
     assert.deepEqual(req.body, { email: "a@b.com" });
+  });
+});
+
+/** Como en Express 5: req.query es un getter del prototipo, sin setter. */
+function requestConQuery(query) {
+  const prototipo = {};
+  Object.defineProperty(prototipo, "query", { get: () => query, configurable: true });
+  return Object.create(prototipo);
+}
+
+describe("validarQuery (feature 003)", () => {
+  const schema = z.object({
+    orden: z.enum(["fecha", "precio"], { error: "Elegí un orden válido" }).default("fecha"),
+    busqueda: z.string().trim().optional(),
+  });
+
+  it("si es válido reemplaza req.query por los datos normalizados, aunque req.query sea un getter", () => {
+    const req = requestConQuery({ busqueda: "  galpon " });
+    let recibido = "sin llamar";
+    validarQuery(schema)(req, {}, (error) => (recibido = error));
+    assert.equal(recibido, undefined);
+    assert.deepEqual(req.query, { orden: "fecha", busqueda: "galpon" });
+  });
+
+  it("si es inválido devuelve DATOS_INVALIDOS con un error por campo", () => {
+    const req = requestConQuery({ orden: "nombre" });
+    let recibido;
+    validarQuery(schema)(req, {}, (error) => (recibido = error));
+    assert.ok(recibido instanceof DatosInvalidos);
+    assert.deepEqual(recibido.campos, [{ campo: "orden", mensaje: "Elegí un orden válido" }]);
   });
 });

@@ -39,3 +39,49 @@ export function isoConOffset(fecha: Date): string {
     `${signo}${dos(offset / 60)}:${dos(offset % 60)}`
   );
 }
+
+// Feature 003 (specs/003-explorar-detalle-evento/contracts/rutas-front.md § Formatos, research R16).
+
+const DIAS_LARGOS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const MESES_LARGOS = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+
+/** ISO → "Sábado 21 de noviembre" en hora local. */
+export function fechaLarga(iso: string): string {
+  const fecha = new Date(iso);
+  return `${DIAS_LARGOS[fecha.getDay()]} ${fecha.getDate()} de ${MESES_LARGOS[fecha.getMonth()]}`;
+}
+
+/** ISO → "21:00 h" en hora local. */
+export function hora(iso: string): string {
+  const fecha = new Date(iso);
+  return `${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')} h`;
+}
+
+/** "$ 12.000 a $ 26.000", o un solo precio si son iguales. */
+export function rangoDePrecios(desde: number, hasta: number): string {
+  return desde === hasta ? plata(desde) : `${plata(desde)} a ${plata(hasta)}`;
+}
+
+/** 4.5 → "4.5"; 4 → "4.0" (un decimal con punto, como en el diseño). */
+export function puntaje(valor: number): string {
+  return valor.toFixed(1);
+}
+
+/** 4 → "★★★★☆". */
+export function estrellas(valor: number): string {
+  const llenas = Math.max(0, Math.min(5, Math.round(valor)));
+  return '★'.repeat(llenas) + '☆'.repeat(5 - llenas);
+}
+
+/** "5 eventos" / "1 evento" / "0 eventos". */
+export function contadorEventos(n: number): string {
+  return n === 1 ? '1 evento' : `${miles(n)} eventos`;
+}
+
+/** "4 reseñas de eventos anteriores" / "1 reseña de eventos anteriores". */
+export function contadorResenas(n: number): string {
+  return n === 1 ? '1 reseña de eventos anteriores' : `${miles(n)} reseñas de eventos anteriores`;
+}

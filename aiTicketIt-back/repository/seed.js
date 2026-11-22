@@ -14,6 +14,14 @@ export const compradoresSeed = [
     email: "sofia.gomez@correo.com",
     contrasenaHash: HASH_CONTRASENA_DESARROLLO,
   },
+  // Compradores de ejemplo de la feature 003 (specs/003-explorar-detalle-evento/data-model.md § Seed):
+  // autores de las reseñas, para que cada organizador tenga puntaje (research R17).
+  ...[
+    ["cmp-2", "Martín", "Pérez", "martin.perez@correo.com"],
+    ["cmp-3", "Lucía", "Fernández", "lucia.fernandez@correo.com"],
+    ["cmp-4", "Diego", "Romero", "diego.romero@correo.com"],
+    ["cmp-5", "Valentina", "Sosa", "valentina.sosa@correo.com"],
+  ].map(([id, nombre, apellido, email]) => ({ id, nombre, apellido, email, contrasenaHash: HASH_CONTRASENA_DESARROLLO })),
 ];
 
 export const organizadoresSeed = [
@@ -171,9 +179,57 @@ export const eventosSeed = [
     estado: "Borrador",
     creadoEn: "2026-11-02T10:00:00-03:00",
   },
+  // Feature 003 (research R17): evento pasado de Club del Chiste, para que tenga reseñas.
+  {
+    id: "evt-9",
+    organizadorId: "org-2",
+    nombre: "Stand-up en el Sótano",
+    descripcion: "Tres comediantes nuevos prueban material en un sótano de Palermo.",
+    categoria: "Comedia",
+    fechaHora: "2026-08-22T21:30:00-03:00",
+    ubicacion: "La Tangente, Palermo",
+    imagenId: "img-seed-sotano",
+    materialMultimedia: [],
+    tiposDeEntrada: [{ id: "tip-14", nombre: "General", cupo: 100, precio: 7000, vendidas: 100 }],
+    estado: "Publicado",
+    creadoEn: "2026-06-15T10:00:00-03:00",
+  },
 ];
 
 /** Imágenes de ejemplo (research R8): archivo en repository/imagenes-seed/ → id fijo. */
-export const imagenesSeed = ["hamlet", "risas", "bodas", "cartas", "impro", "tango", "edipo", "gaviota"].map(
+export const imagenesSeed = ["hamlet", "risas", "bodas", "cartas", "impro", "tango", "edipo", "gaviota", "sotano"].map(
   (nombre) => ({ id: `img-seed-${nombre}`, archivo: `${nombre}.png`, tipoMime: "image/png" }),
 );
+
+/**
+ * Compras Utilizadas y calificadas (specs/003-explorar-detalle-evento/data-model.md § Seed, research R17).
+ * La calificación vive en la compra (research R7). Promedios: La Trama 4.5, Lumbre 4.0, Club del Chiste 3.7.
+ * Las vendidas de los tipos de entrada no se recalculan desde estas compras.
+ */
+const compraCalificada = (numero, compradorId, eventoId, tipoDeEntradaId, cantidad, monto, medioDePago, dia, puntaje, comentario) => ({
+  numero,
+  compradorId,
+  eventoId,
+  tipoDeEntradaId,
+  cantidad,
+  monto,
+  medioDePago,
+  estado: "Utilizada",
+  creadaEn: `${dia}T09:00:00-03:00`,
+  calificacion: { puntaje, comentario, calificadaEn: `${dia}T18:00:00-03:00` },
+});
+
+export const comprasSeed = [
+  // Compañía La Trama · Edipo Rey (2026-09-12)
+  compraCalificada("A-0655", "cmp-1", "evt-7", "tip-12", 1, 10000, "Tarjeta de débito", "2026-09-13", 4, "Muy buena puesta, el final te deja pensando."),
+  compraCalificada("A-0612", "cmp-2", "evt-7", "tip-12", 2, 20000, "Tarjeta de crédito", "2026-09-14", 5, "Impecable. Los actores muy cerca del público."),
+  compraCalificada("A-0618", "cmp-3", "evt-7", "tip-12", 1, 10000, "Mercado Pago", "2026-09-15", 5, null),
+  compraCalificada("A-0631", "cmp-4", "evt-7", "tip-12", 1, 10000, "Transferencia", "2026-09-20", 4, "Buena, aunque la sala hacía mucho frío."),
+  // Producciones Lumbre · Tango en el Conventillo (2026-10-18)
+  compraCalificada("A-0820", "cmp-3", "evt-6", "tip-11", 2, 20000, "Tarjeta de crédito", "2026-10-19", 4, "Hermosa ambientación del conventillo."),
+  compraCalificada("A-0834", "cmp-5", "evt-6", "tip-11", 1, 10000, "Tarjeta de débito", "2026-10-21", 4, null),
+  // Club del Chiste · Stand-up en el Sótano (2026-08-22)
+  compraCalificada("A-0540", "cmp-2", "evt-9", "tip-14", 1, 7000, "Mercado Pago", "2026-08-23", 3, "Algunos chistes funcionaron, otros no tanto."),
+  compraCalificada("A-0547", "cmp-4", "evt-9", "tip-14", 1, 7000, "Tarjeta de crédito", "2026-08-24", 4, "Me reí mucho con el segundo comediante."),
+  compraCalificada("A-0559", "cmp-5", "evt-9", "tip-14", 2, 14000, "Tarjeta de débito", "2026-08-25", 4, null),
+];

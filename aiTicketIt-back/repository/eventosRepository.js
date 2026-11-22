@@ -8,6 +8,11 @@ let ultimoTipo = 0;
 
 const numeroDe = (id) => Number(id.split("-")[1]);
 
+/** Todos los eventos, en cualquier estado. La visibilidad la decide el servicio (feature 003, research R2). */
+export function listarTodos() {
+  return [...porId.values()];
+}
+
 export function listarPorOrganizador(organizadorId) {
   return [...porId.values()].filter((e) => e.organizadorId === organizadorId);
 }

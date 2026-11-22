@@ -33,9 +33,11 @@ type Opciones = {
   tipo?: TipoDeCuenta;
   /** Content-Type de un body binario, si el Blob no lo trae (en nativo, fetch(uri).blob() puede venir sin tipo). */
   tipoContenido?: string;
+  /** Para cancelar el pedido (research R12 de la feature 003): un pedido cancelado lanza ErrorApi('CANCELADO'). */
+  signal?: AbortSignal;
 };
 
-export async function pedir<T>(ruta: string, { metodo = 'GET', body, token, tipo, tipoContenido }: Opciones = {}): Promise<T> {
+export async function pedir<T>(ruta: string, { metodo = 'GET', body, token, tipo, tipoContenido, signal }: Opciones = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   const esBinario = typeof Blob !== 'undefined' && body instanceof Blob;
   if (esBinario) headers['Content-Type'] = tipoContenido ?? body.type;
@@ -48,8 +50,10 @@ export async function pedir<T>(ruta: string, { metodo = 'GET', body, token, tipo
       method: metodo,
       headers,
       body: body === undefined ? undefined : esBinario ? body : JSON.stringify(body),
+      signal,
     });
   } catch {
+    if (signal?.aborted) throw new ErrorApi('CANCELADO', 'Pedido cancelado.');
     throw new ErrorApi('RED', 'No pudimos conectarnos.');
   }
 

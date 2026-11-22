@@ -59,6 +59,7 @@ function estilo(tamano: number, interlinea: number, peso: 400 | 500, tracking = 
 export const type = {
   wordmark: estilo(30, 1.1, 500, -0.02),
   wordmarkDesktop: estilo(26, 1.1, 500, -0.02),
+  h2: estilo(32, 1.12, 500),
   h3: estilo(25, 1.12, 500),
   h4: estilo(20, 1.12, 500),
   h5: estilo(16, 1.12, 500),

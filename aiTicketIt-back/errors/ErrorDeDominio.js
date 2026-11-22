@@ -79,3 +79,9 @@ export class ImagenNoEncontrada extends ErrorDeDominio {
     super({ codigo: "IMAGEN_NO_ENCONTRADA", mensaje: "No encontramos la imagen.", status: 404 });
   }
 }
+
+export class OrganizadorNoEncontrado extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "ORGANIZADOR_NO_ENCONTRADO", mensaje: "No encontramos el organizador.", status: 404 });
+  }
+}

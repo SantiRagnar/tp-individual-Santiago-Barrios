@@ -1,8 +1,8 @@
-import { Image } from 'expo-image';
 import { Plus } from 'phosphor-react-native';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { urlDeImagen, type EventoResumen } from '@/api/eventos';
+import type { EventoResumen } from '@/api/eventos';
+import { ImagenDeEvento } from '@/components/ds/ImagenEvento';
 import { ProgressBar } from '@/components/ds/ProgressBar';
 import { TagEstado } from '@/components/ds/Tag';
 import { entradasVendidas, fechaCorta } from '@/lib/formato';
@@ -21,19 +21,6 @@ const fondoInteractivo = ({ hovered, pressed, focused }: EstadoPress) => [
   focused && Platform.OS === 'web' && styles.foco,
 ];
 
-/** Espacio de la imagen cuando el evento no tiene: placeholder neutro con "Imagen del evento". */
-export function ImagenDeEvento({ imagenUrl, alto = ALTO_IMAGEN }: { imagenUrl: string | null; alto?: number }) {
-  const uri = urlDeImagen(imagenUrl);
-  if (!uri) {
-    return (
-      <View style={[styles.placeholder, { height: alto }]}>
-        <Text style={[type.caption, { color: color.textMuted }]}>Imagen del evento</Text>
-      </View>
-    );
-  }
-  return <Image source={{ uri }} style={{ height: alto, width: '100%' }} contentFit="cover" accessible={false} />;
-}
-
 /** Tarjeta de Mis eventos (Organizadores 02). Toda la tarjeta es un botón que abre el Detalle. */
 export function EventManageCard({ evento, onPress }: { evento: EventoResumen; onPress: () => void }) {
   const nombre = evento.nombre ?? 'Nombre del evento';
@@ -46,7 +33,7 @@ export function EventManageCard({ evento, onPress }: { evento: EventoResumen; on
       accessibilityRole="button"
       accessibilityLabel={`${nombre}, ${fecha}, ${evento.estado}, ${vendidas}`}
       style={(estado: EstadoPress) => [styles.tarjeta, ...fondoInteractivo(estado)]}>
-      <ImagenDeEvento imagenUrl={evento.imagenUrl} />
+      <ImagenDeEvento imagenUrl={evento.imagenUrl} alto={ALTO_IMAGEN} />
       <View style={styles.cuerpo}>
         <Text style={[titulo, { color: color.text }]} numberOfLines={2}>
           {nombre}

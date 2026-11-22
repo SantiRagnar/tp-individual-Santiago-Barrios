@@ -24,3 +24,4 @@ export const LUMBRE = "contacto@lumbre.com.ar";
 
 /** "Hoy" de los tests: la fecha de referencia de pantallas.md (research R2). */
 export const HOY = new Date("2026-11-09T12:00:00-03:00");
+export const MARTIN = "martin.perez@correo.com";

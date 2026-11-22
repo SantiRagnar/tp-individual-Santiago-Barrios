@@ -57,7 +57,7 @@ describe("GET /organizadores/eventos (US1)", () => {
     const res = await conToken(request(app).get("/organizadores/eventos"), token);
     assert.deepEqual(
       res.body.eventos.map((e) => e.id),
-      ["evt-2", "evt-5"],
+      ["evt-2", "evt-5", "evt-9"],
     );
   });
 });

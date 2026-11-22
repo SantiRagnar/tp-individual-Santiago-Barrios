@@ -73,6 +73,10 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Contador de resultados ("N eventos" / "1 evento").
 - Lista de **EventCard**: imagen, categoría, corazón de favorito, título, fecha corta, sala, "Desde $ X", puntaje · organizador, botón **Comprar** (va directo a Elegir entradas). Tocar la tarjeta abre el Detalle.
 - Vacío: "No encontramos eventos — Probá con otra búsqueda o categoría."
+- **Carga por partes** (feature 003): la lista trae 10 eventos y, al llegar al final, se agregan solos los 10 siguientes con un indicador de carga al pie. El contador muestra siempre el total. Cambiar búsqueda, chip u orden vuelve a empezar desde los primeros 10.
+- Primera carga: tarjetas esqueleto (`surface`). Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato." + **Reintentar** (secundario); si falla una página siguiente, el aviso va al pie y los eventos ya cargados quedan.
+- Organizador sin reseñas: la tarjeta muestra solo el nombre del organizador, sin puntaje; al ordenar por Puntaje esos eventos van al final.
+- Mientras no exista Elegir entradas, **Comprar** se ve habilitado y no hace nada (feature 003).
 - BottomNav: **Explorar** (activa) / **Favoritos**.
 
 ### 03 · Menú de perfil (BottomSheet)
@@ -85,6 +89,9 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Facts: fecha larga ("Sábado 21 de noviembre"), hora ("21:00 h"), sala, rango de precios ("$ 12.000 a $ 26.000", o un precio si hay un solo tipo).
 - Descripción.
 - **Opiniones sobre el organizador:** puntaje promedio, nombre del organizador, "N reseñas de eventos anteriores", lista de reseñas (autor, ★★★★☆, evento, texto).
+  - Se muestran las 5 más recientes; si hay más, **Ver más** (botón secundario) agrega abajo las 5 siguientes, hasta mostrarlas todas. El contador y el puntaje siempre son del total (feature 003).
+  - Sin reseñas: nombre del organizador y "Todavía no tiene reseñas.".
+- **Evento no disponible** (no existe, es Borrador o ya terminó): AppBar con Volver, "Este evento no está disponible." y **Volver a Explorar** (secundario).
 - ActionFooter: "Desde $ X" + **Comprar** (o **Agotado** deshabilitado si no queda ningún tipo con lugares).
 
 ### 05 · Elegir entradas (tipo de entrada y cantidad)
@@ -129,6 +136,7 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 ### 11 · Favoritos
 - Título "Favoritos". Lista de eventos favoritos (título, fecha corta, "Desde $ X", corazón para quitar).
 - Vacío: "Todavía no guardaste eventos — Tocá el corazón en un evento para encontrarlo acá."
+- Se recarga cada vez que se vuelve a la pestaña. Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato." + **Reintentar**.
 - BottomNav: Explorar / **Favoritos** (activa).
 
 ### 12 · Calificar experiencia

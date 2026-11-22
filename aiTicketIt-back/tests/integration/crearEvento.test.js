@@ -77,7 +77,7 @@ describe("POST /organizadores/eventos — publicar (US2)", () => {
     const res = await crear(valido());
     assert.equal(res.status, 201);
     const { evento } = res.body;
-    assert.equal(evento.id, "evt-9");
+    assert.equal(evento.id, "evt-10");
     assert.equal(evento.estado, "Publicado");
     assert.equal(evento.vendidas, 0);
     assert.equal(evento.cupo, 180);
@@ -85,12 +85,12 @@ describe("POST /organizadores/eventos — publicar (US2)", () => {
     assert.ok(evento.tiposDeEntrada.every((t) => t.vendidas === 0 && t.disponibles === t.cupo));
 
     const mios = await request(app).get("/organizadores/eventos").set("Authorization", `Bearer ${token}`);
-    assert.ok(mios.body.eventos.some((e) => e.id === "evt-9"));
+    assert.ok(mios.body.eventos.some((e) => e.id === "evt-10"));
 
     const otro = await tokenDeOrganizador(CLUB_DEL_CHISTE);
     const ajenos = await request(app).get("/organizadores/eventos").set("Authorization", `Bearer ${otro}`);
-    assert.ok(!ajenos.body.eventos.some((e) => e.id === "evt-9"));
-    const directo = await request(app).get("/organizadores/eventos/evt-9").set("Authorization", `Bearer ${otro}`);
+    assert.ok(!ajenos.body.eventos.some((e) => e.id === "evt-10"));
+    const directo = await request(app).get("/organizadores/eventos/evt-10").set("Authorization", `Bearer ${otro}`);
     assert.equal(directo.status, 404);
   });
 });

@@ -215,6 +215,7 @@ Etiqueta chica (`radius-tag`, 11px). Mapeo fijo, igual en las dos apps:
 ### EventCard (Compradores)
 - Imagen de 150px con categoría arriba a la izquierda (`tag-neutral`) y corazón arriba a la derecha (`heart` / `heart-fill` en `accent-300`); debajo título, fecha y lugar con ícono; al pie precio ("Desde $ 12.000") + puntaje del organizador a la izquierda y "Comprar" a la derecha.
 - Toda la tarjeta abre el detalle; corazón y Comprar son acciones propias.
+- Organizador sin reseñas: al pie solo el nombre del organizador, sin puntaje.
 
 ### EventManageCard (Organizadores)
 - Grilla de 4 columnas. Imagen de 140px, título (15px), fecha + Tag de estado, ProgressBar fina y "N de M entradas vendidas".
@@ -307,6 +308,8 @@ Etiqueta chica (`radius-tag`, 11px). Mapeo fijo, igual en las dos apps:
 - **Para calificar:** cinco estrellas (botones con `aria-label` "N estrellas" y `aria-pressed` en la elegida), llenas hasta la elegida. Botón de envío `disabled` hasta elegir. Comentario opcional ("Contanos qué te pareció (opcional)").
 - **Para mostrar:** puntaje (32px) + nombre del organizador + "N reseñas de eventos anteriores". Cada reseña: autor, estrellas en texto (★★★★☆), evento y comentario muted.
 - **La reseña es del organizador, no del evento.**
+- **Lista larga:** se muestran 5 reseñas; **Ver más** (Button secundario, con indicador mientras carga) agrega 5 más debajo y desaparece cuando ya están todas.
+- **Sin reseñas:** nombre del organizador + "Todavía no tiene reseñas." (sin puntaje ni contador).
 - **Reglas:** solo una compra **Utilizada** se puede calificar, **una sola vez**. Puntaje 1–5 + comentario opcional de hasta 500 caracteres, guardado en la compra.
 - **Dónde se califica:** Mis compras ("Calificá tu experiencia" / ya calificada "Calificaste ★★★★☆"), Detalle de compra (tarjeta "Tu entrada fue utilizada" → "Calificar experiencia"; ya calificada "Tu calificación" + "Visible en los eventos de {organizador}"), pantalla Calificar experiencia (estrellas grandes 36px, palabra del puntaje: Malo, Regular, Bueno, Muy bueno, Excelente; comentario con contador; "Enviar calificación"), y Explorar (recordatorio con la compra utilizada más reciente sin calificar).
 

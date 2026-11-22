@@ -74,3 +74,43 @@ describe("/docs.json — eventos e imágenes (feature 002)", () => {
     }
   });
 });
+
+// Debe coincidir con specs/003-explorar-detalle-evento/contracts/compradores.openapi.yaml (Principio IV).
+const ESPERADO_COMPRADORES = {
+  "/compradores/eventos": { get: ["200", "400", "401"] },
+  "/compradores/eventos/{id}": { get: ["200", "401", "404"] },
+  "/compradores/organizadores/{id}/resenas": { get: ["200", "400", "401", "404"] },
+  "/compradores/favoritos": { get: ["200", "401"] },
+  "/compradores/favoritos/{eventoId}": { put: ["204", "401", "404"], delete: ["204", "401"] },
+};
+
+describe("/docs.json — explorar, detalle y favoritos (feature 003)", () => {
+  it("documenta los endpoints con sus métodos y respuestas", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const [ruta, metodos] of Object.entries(ESPERADO_COMPRADORES)) {
+      const documentada = body.paths[ruta];
+      assert.ok(documentada, `falta ${ruta}`);
+      const metodosDocumentados = Object.keys(documentada).filter((k) => k !== "parameters");
+      assert.deepEqual(metodosDocumentados.sort(), Object.keys(metodos).sort(), ruta);
+      for (const [metodo, codigos] of Object.entries(metodos)) {
+        assert.deepEqual(Object.keys(documentada[metodo].responses).sort(), codigos, `${metodo.toUpperCase()} ${ruta}`);
+      }
+    }
+  });
+
+  it("define los schemas del contrato y la respuesta EventoNoEncontrado que reutiliza", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const schema of [
+      "OrganizadorResumen",
+      "EventoCompradorResumen",
+      "EventoCompradorDetalle",
+      "TipoDeEntradaComprador",
+      "Resena",
+      "PaginaDeEventos",
+      "PaginaDeResenas",
+    ]) {
+      assert.ok(body.components.schemas[schema], `falta el schema ${schema}`);
+    }
+    assert.ok(body.components.responses.EventoNoEncontrado);
+  });
+});
