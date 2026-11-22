@@ -318,6 +318,10 @@ Etiqueta chica (`radius-tag`, 11px). Mapeo fijo, igual en las dos apps:
 - Confirmación en línea: tarjeta chica con `check-circle` en acento + una frase.
 - `empty`: ícono de 28px a media opacidad, qué pasó y qué probar.
 - Pantalla de éxito: marca de 96px con brillo `accent-600`, título h3 "¡Compra confirmada!", número de compra en `tag-accent` y lo que falta ("Faltan 3 días para el evento").
+- **MarcaDeExito** (componente de la pantalla de éxito): círculo de 96px en `accent-900` con brillo `accent-600` y `check-circle` relleno en `accent` de 48px. Decorativa (`accessibilityElementsHidden`); el título comunica el resultado.
+
+### ResumenCompra
+- Tarjeta "Resumen" de Pago: card `surface` con `pad-card`, `radius-md` y `shadow-sm`. Kicker "Resumen"; evento en `type-h4`; "{fecha corta} · {sala}" muted; fila "{tipo} × {cantidad}" a la izquierda y total tabular a la derecha, separada por `divider`.
 
 ## Checklist para una pantalla nueva
 

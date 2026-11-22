@@ -1,8 +1,9 @@
-import { ArrowCounterClockwise, CheckCircle, Clock, Ticket, XCircle, type Icon } from 'phosphor-react-native';
+import { ArrowCounterClockwise, CheckCircle, Clock, Ticket, XCircle, type IconProps } from 'phosphor-react-native';
+import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { EstadoCompra } from '@/api/compras';
 import type { EstadoEvento } from '@/api/eventos';
-import type { EstadoCompra } from '@/api/ventas';
 import { color, radius, space, type } from '@/theme/tokens';
 
 export type VarianteTag = 'accent' | 'outline' | 'neutral';
@@ -22,7 +23,7 @@ const ESTILO: Record<VarianteTag, { fondo: string; borde: string; texto: string 
 };
 
 /** Etiqueta chica (radius-tag, 11px). La categoría del evento usa `neutral`. */
-export function Tag({ children, variante, Icono }: { children: string; variante: VarianteTag; Icono?: Icon }) {
+export function Tag({ children, variante, Icono }: { children: string; variante: VarianteTag; Icono?: ComponentType<IconProps> }) {
   const e = ESTILO[variante];
   return (
     <View style={[styles.tag, Icono && styles.conIcono, { backgroundColor: e.fondo, borderColor: e.borde }]}>
@@ -36,8 +37,8 @@ export function TagEstado({ estado }: { estado: EstadoEvento }) {
   return <Tag variante={VARIANTE_POR_ESTADO[estado]}>{estado}</Tag>;
 }
 
-/** Mapeo fijo de design-system.md § Tag para los estados de compra (variante + ícono + palabra). */
-const TAG_POR_ESTADO_COMPRA: Record<EstadoCompra, { variante: VarianteTag; Icono: Icon }> = {
+/** Mapeo fijo de design-system.md § Tag para estados de compra: siempre ícono + palabra (feature 004). */
+const TAG_POR_ESTADO_DE_COMPRA: Record<EstadoCompra, { variante: VarianteTag; Icono: ComponentType<IconProps> }> = {
   'Pendiente de pago': { variante: 'outline', Icono: Clock },
   Confirmada: { variante: 'accent', Icono: CheckCircle },
   Utilizada: { variante: 'neutral', Icono: Ticket },
@@ -45,12 +46,18 @@ const TAG_POR_ESTADO_COMPRA: Record<EstadoCompra, { variante: VarianteTag; Icono
   Reembolsada: { variante: 'neutral', Icono: ArrowCounterClockwise },
 };
 
-export function TagEstadoCompra({ estado }: { estado: EstadoCompra }) {
-  const { variante, Icono } = TAG_POR_ESTADO_COMPRA[estado];
+/** Estado de compra con ícono. `grande` = tag-lg (12px), para el Detalle de compra. */
+export function TagCompra({ estado, grande = false }: { estado: EstadoCompra; grande?: boolean }) {
+  const { variante, Icono } = TAG_POR_ESTADO_DE_COMPRA[estado];
+  const e = ESTILO[variante];
   return (
-    <Tag variante={variante} Icono={Icono}>
-      {estado}
-    </Tag>
+    <View
+      style={[styles.tag, styles.conIcono, grande && styles.grande, { backgroundColor: e.fondo, borderColor: e.borde }]}
+      accessible
+      accessibilityLabel={`Estado: ${estado}`}>
+      <Icono size={grande ? 14 : 12} color={e.texto} weight="bold" />
+      <Text style={[grande ? type.label : type.meta, { color: e.texto }]}>{estado}</Text>
+    </View>
   );
 }
 
@@ -62,5 +69,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.s2,
     paddingVertical: space.s1 / 2,
   },
-  conIcono: { flexDirection: 'row', alignItems: 'center', gap: space.s1 },
+  conIcono: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.s1,
+  },
+  grande: {
+    paddingHorizontal: space.s3,
+    paddingVertical: space.s1,
+  },
 });

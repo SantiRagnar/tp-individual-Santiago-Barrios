@@ -86,14 +86,41 @@ export class OrganizadorNoEncontrado extends ErrorDeDominio {
   }
 }
 
-// Feature 005 (specs/005-panel-evento/data-model.md § Errores nuevos). COMPRA_NO_ENCONTRADA es el
-// mismo código y texto que define la feature 004.
-export class CompraNoEncontrada extends ErrorDeDominio {
+// Feature 004 · compras (specs/004-compra-pago-mis-compras/research.md R4). Los textos de pantalla los arma
+// el front a partir del código, porque incluyen el nombre del tipo de entrada.
+
+export class PrecioCambiado extends ErrorDeDominio {
   constructor() {
-    super({ codigo: "COMPRA_NO_ENCONTRADA", mensaje: "No encontramos la compra.", status: 404 });
+    super({ codigo: "PRECIO_CAMBIADO", mensaje: "El precio de la entrada cambió. Revisá tu compra.", status: 409 });
   }
 }
 
+export class LugaresInsuficientes extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "LUGARES_INSUFICIENTES", mensaje: "Ya no quedan suficientes entradas.", status: 409 });
+  }
+}
+
+// La usan la feature 004 (compras del comprador) y la 005 (panel del evento) con el mismo código y texto.
+export class CompraNoEncontrada extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "COMPRA_NO_ENCONTRADA", mensaje: "No encontramos esta compra.", status: 404 });
+  }
+}
+
+export class PagoNoPermitido extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "PAGO_NO_PERMITIDO", mensaje: "Esta compra no tiene un pago pendiente.", status: 409 });
+  }
+}
+
+export class CancelacionNoPermitida extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "CANCELACION_NO_PERMITIDA", mensaje: "Esta compra no se puede cancelar.", status: 409 });
+  }
+}
+
+// Feature 005 (specs/005-panel-evento/data-model.md § Errores nuevos).
 export class CompraNoConfirmada extends ErrorDeDominio {
   constructor() {
     super({ codigo: "COMPRA_NO_CONFIRMADA", mensaje: "La compra ya no está confirmada.", status: 409 });

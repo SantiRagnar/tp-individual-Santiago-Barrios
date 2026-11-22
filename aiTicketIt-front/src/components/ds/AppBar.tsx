@@ -7,9 +7,19 @@ import { color, iconSize, radius, size, space, tinte, type } from '@/theme/token
 
 /**
  * AppBar mobile (design-system.md § AppBar): Volver siempre a la izquierda (44px), título de una
- * línea con elipsis y a lo sumo una acción a la derecha.
+ * línea con elipsis, subtítulo opcional de 12px muted (evento · fecha) y a lo sumo una acción a la derecha.
  */
-export function AppBar({ titulo, accion, onVolver }: { titulo?: string; accion?: ReactNode; onVolver?: () => void }) {
+export function AppBar({
+  titulo,
+  subtitulo,
+  accion,
+  onVolver,
+}: {
+  titulo?: string;
+  subtitulo?: string;
+  accion?: ReactNode;
+  onVolver?: () => void;
+}) {
   const volver = onVolver ?? (() => (router.canGoBack() ? router.back() : router.replace('/explorar')));
   return (
     <View style={styles.barra}>
@@ -24,9 +34,16 @@ export function AppBar({ titulo, accion, onVolver }: { titulo?: string; accion?:
         ]}>
         <ArrowLeft size={iconSize.barra} color={color.text} />
       </Pressable>
-      <Text style={[type.screenTitle, styles.titulo]} numberOfLines={1} accessibilityRole="header">
-        {titulo ?? ''}
-      </Text>
+      <View style={styles.textos}>
+        <Text style={[type.screenTitle, styles.titulo]} numberOfLines={1} accessibilityRole="header">
+          {titulo ?? ''}
+        </Text>
+        {subtitulo ? (
+          <Text style={[type.label, { color: color.textMuted }]} numberOfLines={1}>
+            {subtitulo}
+          </Text>
+        ) : null}
+      </View>
       <View style={styles.accion}>{accion}</View>
     </View>
   );
@@ -47,7 +64,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titulo: { flex: 1, color: color.text },
+  textos: { flex: 1 },
+  titulo: { color: color.text },
   accion: { minWidth: size.touchTarget, alignItems: 'flex-end' },
   foco: { outlineWidth: 2, outlineStyle: 'solid', outlineColor: color.accent, outlineOffset: 2 },
 });

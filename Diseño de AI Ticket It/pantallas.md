@@ -2,6 +2,7 @@
 
 > Fuente: artifact "Diseño de sistema de dos apps" (https://claude.ai/code/artifact/576d1277-b8fb-4acd-82b9-384674ba49d4), versión del 2026-11-18. Las pantallas son prototipos navegables; las reglas de negocio de abajo salen de su lógica.
 > Componentes, tokens y formatos de texto: ver [design-system.md](design-system.md).
+> Los estados agregados por las specs (features 003 y 004) se documentan solo en estos archivos `.md`; el artifact conserva la versión del 2026-11-18.
 
 ---
 
@@ -82,6 +83,7 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 ### 03 · Menú de perfil (BottomSheet)
 - Avatar grande, nombre ("Sofía Gómez"), "Mi perfil".
 - Filas: **Mis compras**, **Favoritos**, **Datos personales**, y al final **Cerrar sesión** (ghost). (Datos personales no tiene pantalla diseñada.)
+- Feature 004: **Datos personales** se ve pero no tiene acción hasta su feature. Se cierra tocando el scrim.
 
 ### 04 · Detalle del evento
 - AppBar: Volver, título del evento, acción de favorito.
@@ -99,6 +101,9 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - **Tipo de entrada** (RadioCard): nombre, "Quedan N" o "Agotada" (deshabilitada), precio. Preselecciona el primer tipo con lugares.
 - **Cantidad** (QuantityStepper) con ayuda "Máximo N" / "Sin cupo". Al cambiar de tipo, la cantidad se ajusta al nuevo máximo.
 - ActionFooter: "Total $ X" + **Continuar al pago**.
+- Sin ningún tipo con lugares: todos "Agotada", ayuda "Sin cupo" y **Continuar al pago** deshabilitado.
+- Aviso al volver de Pago (feature 004): "Ya no quedan suficientes entradas de {tipo}." o "El precio de {tipo} cambió. Revisá tu compra.", con los lugares y precios actualizados; si el tipo quedó Agotada o ya no existe, se preselecciona el primer tipo con lugares.
+- Carga: esqueleto. Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato." + **Reintentar**. Evento no disponible: igual que en 04.
 
 ### 06 · Pago (simulado)
 - AppBar: "Pago".
@@ -106,6 +111,8 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - **Medio de pago** (RadioCard): Tarjeta de crédito, Tarjeta de débito, Mercado Pago, Transferencia.
 - Nota: "Pago simulado: no se realiza ningún cobro."
 - Botón **Pagar $ X**. Al pagar se crea la compra en estado **Confirmada**, se descuentan los lugares y se va a Compra confirmada.
+- **Pagar $ X** deshabilitado hasta elegir un medio de pago y mientras se procesa. Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato." (el botón queda para reintentar).
+- Si al pagar no quedan lugares suficientes o el precio cambió, vuelve a Elegir entradas con el aviso (05).
 
 ### 07 · Compra confirmada
 - Marca de éxito, título "¡Compra confirmada!", "{evento} · {tipo} × {cantidad}", "Compra #A-NNNN", "Faltan N días para el evento.", "Vas a encontrar tus entradas en Mis compras."
@@ -116,6 +123,9 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Lista de PurchaseCard: evento, fecha corta, "{tipo} × {cantidad}", Tag de estado, cuenta regresiva si está Confirmada, imagen (40% si Cancelada/Reembolsada).
 - Si está Utilizada: "Calificá tu experiencia" (→ Calificar experiencia) o, ya calificada, "Calificaste ★★★★☆".
 - Tocar una compra abre el Detalle de compra.
+- Feature 004: AppBar con Volver. "Calificá tu experiencia" se ve pero no tiene acción hasta la feature de calificaciones. Se recarga cada vez que se vuelve a la pantalla.
+- Vacío: "Todavía no compraste entradas — Cuando compres, vas a encontrarlas acá." + **Explorar eventos** (secundario).
+- Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato." + **Reintentar**.
 
 ### 09 · Detalle de compra
 - AppBar: Volver, nombre del evento.
@@ -127,6 +137,9 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Nota de por qué no se puede cancelar (si aplica).
 - Acciones: **Tengo una consulta** (secundario → Chat de la compra) y **Cancelar compra** (ghost, solo si se puede cancelar).
 - Dialog "¿Cancelar la compra?" con el texto de reintegro o liberación de entradas; botones **Volver** y **Cancelar compra**.
+- Feature 004: **Tengo una consulta** y **Calificar experiencia** se ven pero no tienen acción hasta sus features.
+- Compra inexistente o de otro comprador: AppBar con Volver, "No encontramos esta compra." y **Volver a Mis compras** (secundario).
+- Volver: a la pantalla anterior; si se llegó con **Ver mi compra** desde Compra confirmada, a la pantalla donde se tocó **Comprar** (nunca al flujo de compra).
 
 ### 10 · Chat de la compra
 - AppBar con línea inferior: evento + "{organizador} · Compra #id".
@@ -249,4 +262,4 @@ Dos columnas: formulario + vista previa de 400px.
 - Login con Google y Apple (botones diseñados, flujo no).
 - Pantalla propia de **Editar evento** (se asume el formulario de Crear evento).
 - Cuándo un evento pasa a **Finalizado** (se asume automático al pasar la fecha).
-- Cómo se confirma una compra **Pendiente** pagada por transferencia (en el prototipo, "Completar pago" del comprador).
+- ~~Cómo se confirma una compra **Pendiente** pagada por transferencia~~ → resuelto en la feature 004: **Completar pago** del comprador, simulado.

@@ -139,3 +139,33 @@ describe("/docs.json — ventas del evento (feature 005)", () => {
     }
   });
 });
+
+const ESPERADO_COMPRAS = {
+  "/compradores/compras": { post: ["201", "400", "401", "404", "409"], get: ["200", "401"] },
+  "/compradores/compras/{numero}": { get: ["200", "401", "404"] },
+  "/compradores/compras/{numero}/pago": { post: ["200", "401", "404", "409"] },
+  "/compradores/compras/{numero}/cancelacion": { post: ["200", "401", "404", "409"] },
+};
+
+describe("/docs.json — compra, pago simulado y Mis compras (feature 004)", () => {
+  it("documenta los endpoints con sus métodos y respuestas", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const [ruta, metodos] of Object.entries(ESPERADO_COMPRAS)) {
+      const documentada = body.paths[ruta];
+      assert.ok(documentada, `falta ${ruta}`);
+      const metodosDocumentados = Object.keys(documentada).filter((k) => k !== "parameters");
+      assert.deepEqual(metodosDocumentados.sort(), Object.keys(metodos).sort(), ruta);
+      for (const [metodo, codigos] of Object.entries(metodos)) {
+        assert.deepEqual(Object.keys(documentada[metodo].responses).sort(), codigos, `${metodo.toUpperCase()} ${ruta}`);
+      }
+    }
+  });
+
+  it("define los schemas del contrato y la respuesta CompraNoEncontrada", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const schema of ["Compra", "NuevaCompra", "MedioDePago", "EstadoCompra"]) {
+      assert.ok(body.components.schemas[schema], `falta el schema ${schema}`);
+    }
+    assert.ok(body.components.responses.CompraNoEncontrada);
+  });
+});

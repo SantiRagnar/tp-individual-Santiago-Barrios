@@ -2,7 +2,7 @@ import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Venta } from '@/api/ventas';
 import { Button } from '@/components/ds/Button';
-import { TagEstadoCompra } from '@/components/ds/Tag';
+import { TagCompra } from '@/components/ds/Tag';
 import { entradasDeCompra, numeroCompra, plata } from '@/lib/formato';
 import { color, size, space, type } from '@/theme/tokens';
 
@@ -55,7 +55,7 @@ export function TablaVentas({
               {entradasDeCompra(venta.tipoDeEntrada.nombre, venta.cantidad)}
             </Text>
             <View style={[styles.celda, { width: COLUMNAS[3].ancho }]}>
-              <TagEstadoCompra estado={venta.estado} />
+              <TagCompra estado={venta.estado} />
             </View>
             <Text style={[styles.celda, type.bodySm, styles.texto, { width: COLUMNAS[4].ancho }]}>{venta.medioDePago}</Text>
             <Text style={[styles.celda, type.bodySm, styles.texto, styles.tabular, styles.derecha, { width: COLUMNAS[5].ancho }]}>

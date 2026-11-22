@@ -155,8 +155,7 @@ export default function DetalleEvento() {
             Agotado
           </Button>
         ) : (
-          // Sin acción hasta la feature de compra (FR-009).
-          <Button variante="cta" onPress={() => {}}>
+          <Button variante="cta" onPress={() => router.push({ pathname: '/eventos/[id]/entradas', params: { id: evento.id } })}>
             Comprar
           </Button>
         )}

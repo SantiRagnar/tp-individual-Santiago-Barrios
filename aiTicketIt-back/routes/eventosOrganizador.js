@@ -391,7 +391,7 @@ export function crearRouterEventosOrganizador() {
  *               evento:
  *                 value: { error: { codigo: EVENTO_NO_ENCONTRADO, mensaje: "No encontramos el evento." } }
  *               compra:
- *                 value: { error: { codigo: COMPRA_NO_ENCONTRADA, mensaje: "No encontramos la compra." } }
+ *                 value: { error: { codigo: COMPRA_NO_ENCONTRADA, mensaje: "No encontramos esta compra." } }
  *       409:
  *         description: La compra no está Confirmada, o todavía no es el día del evento
  *         content:

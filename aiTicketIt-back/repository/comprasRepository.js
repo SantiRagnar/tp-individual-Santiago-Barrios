@@ -1,13 +1,19 @@
 import { Compra } from "../models/Compra.js";
 import { comprasSeed, eventosSeed } from "./seed.js";
 
-// Indexado por data-model.md Compra.numero. Además, un índice por organizador con sus compras
-// calificadas (la más reciente primero) y el acumulado de puntajes, para que el puntaje y las
-// reseñas no recorran todas las compras en cada pedido (research R8).
+// Indexado por data-model.md Compra.numero. Además:
+// - un índice por organizador con sus compras calificadas (la más reciente primero) y el acumulado de
+//   puntajes, para que el puntaje y las reseñas no recorran todas las compras (research R8 de la 003);
+// - un índice por comprador para Mis compras, y el contador de números A-NNNN (research R8 de la 004);
+// - un índice por evento para el panel de ventas del organizador (research R3 de la 005).
 const porNumero = new Map();
 const calificacionesPorOrganizador = new Map(); // organizadorId → { calificadas: Compra[], suma, cantidad }
-// Feature 005 (research R3): compras de cada evento ordenadas por [creadaEn desc, numero desc].
+// Compras de cada evento ordenadas por [creadaEn desc, numero desc].
 const comprasPorEvento = new Map(); // eventoId → Compra[]
+const numerosPorComprador = new Map(); // compradorId → Set<numero>
+let ultimoNumero = 0;
+
+const FORMATO_NUMERO = /^A-(\d+)$/;
 
 /** Orden de las reseñas: [calificadaEn desc, numero desc]. Negativo si `a` va antes que `b`. */
 function compararClaves([fechaA, numeroA], [fechaB, numeroB]) {
@@ -53,6 +59,11 @@ export function guardar(datos, { organizadorId }) {
     if (posicion !== -1) lista.splice(posicion, 1);
   }
   insertarOrdenada(delEvento, compra, claveDeVenta);
+
+  if (!numerosPorComprador.has(compra.compradorId)) numerosPorComprador.set(compra.compradorId, new Set());
+  numerosPorComprador.get(compra.compradorId).add(compra.numero);
+  const coincidencia = FORMATO_NUMERO.exec(compra.numero);
+  if (coincidencia) ultimoNumero = Math.max(ultimoNumero, Number(coincidencia[1]));
 
   if (compra.calificacion) {
     const indice = indiceDe(organizadorId);
@@ -107,13 +118,43 @@ export function todasDelEvento(eventoId) {
   return [...(comprasPorEvento.get(eventoId) ?? [])];
 }
 
+/** Número para una compra nueva: sigue después del mayor existente, con al menos 4 dígitos (A-1043, A-10000). */
+export function siguienteNumero() {
+  ultimoNumero += 1;
+  return `A-${String(ultimoNumero).padStart(4, "0")}`;
+}
+
+/** Orden de Mis compras: [creadaEn desc, numero desc]. */
+function compararPorCreacion(a, b) {
+  const diferencia = new Date(b.creadaEn).getTime() - new Date(a.creadaEn).getTime();
+  if (diferencia !== 0) return diferencia;
+  return a.numero < b.numero ? 1 : a.numero > b.numero ? -1 : 0;
+}
+
+/** Compras del comprador, la más nueva primero (FR-013). Usa el índice por comprador. */
+export function listarPorComprador(compradorId) {
+  const numeros = numerosPorComprador.get(compradorId);
+  if (!numeros) return [];
+  return [...numeros].map((numero) => porNumero.get(numero)).sort(compararPorCreacion);
+}
+
 export function reiniciar() {
   porNumero.clear();
   calificacionesPorOrganizador.clear();
   comprasPorEvento.clear();
-  const organizadorDe = new Map(eventosSeed.map((e) => [e.id, e.organizadorId]));
-  // structuredClone: los tests pueden modificar compras sin tocar el seed.
-  comprasSeed.forEach((datos) => guardar(structuredClone(datos), { organizadorId: organizadorDe.get(datos.eventoId) }));
+  numerosPorComprador.clear();
+  ultimoNumero = 0;
+  const eventoDe = new Map(eventosSeed.map((e) => [e.id, e]));
+  comprasSeed.forEach((original) => {
+    // structuredClone: los tests pueden modificar compras sin tocar el seed.
+    const datos = structuredClone(original);
+    const evento = eventoDe.get(datos.eventoId);
+    // La copia del tipo (research R6 de la 004) se completa desde el evento del seed.
+    const tipo = evento.tiposDeEntrada.find((t) => t.id === datos.tipoDeEntradaId);
+    datos.tipoDeEntradaNombre ??= tipo?.nombre ?? null;
+    datos.precioUnitario ??= datos.monto / datos.cantidad;
+    guardar(datos, { organizadorId: evento.organizadorId });
+  });
 }
 
 reiniciar();

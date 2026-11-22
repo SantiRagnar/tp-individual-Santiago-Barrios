@@ -1,7 +1,8 @@
 /**
- * Ver specs/003-explorar-detalle-evento/data-model.md § Compra y § Calificacion (research R7).
- * Versión mínima: en la feature 003 solo existen las del seed y solo se leen. La calificación se
- * guarda en la compra, como indica el design system.
+ * Ver specs/004-compra-pago-mis-compras/data-model.md § Compra (y la 003 para § Calificacion).
+ * `tipoDeEntradaNombre` y `precioUnitario` son una copia del tipo al pagar (research R6): la compra sigue
+ * diciendo qué se compró aunque el organizador renombre o borre el tipo. La calificación se guarda en la
+ * compra, como indica el design system.
  */
 export class Compra {
   constructor({
@@ -9,6 +10,8 @@ export class Compra {
     compradorId,
     eventoId,
     tipoDeEntradaId,
+    tipoDeEntradaNombre = null,
+    precioUnitario = null,
     cantidad,
     monto,
     medioDePago,
@@ -20,6 +23,8 @@ export class Compra {
     this.compradorId = compradorId;
     this.eventoId = eventoId;
     this.tipoDeEntradaId = tipoDeEntradaId;
+    this.tipoDeEntradaNombre = tipoDeEntradaNombre;
+    this.precioUnitario = precioUnitario;
     this.cantidad = cantidad;
     this.monto = monto;
     this.medioDePago = medioDePago;
