@@ -63,6 +63,8 @@ export const type = {
   h3: estilo(25, 1.12, 500),
   h4: estilo(20, 1.12, 500),
   h5: estilo(16, 1.12, 500),
+  /** Cifra principal de StatCard (design-system.md § Tipografía). */
+  stat: estilo(28, 1.1, 500),
   screenTitle: estilo(17, 1.25, 500),
   cardTitle: estilo(17, 1.2, 500),
   body: estilo(15, 1.55, 400),
@@ -96,6 +98,10 @@ export const size = {
   ctaHeight: 46,
   controlHeight: 36,
   chipHeight: 34,
+  /** `chip-sm`: filtros de estado sobre la tabla de ventas (desktop). */
+  chipHeightSm: 26,
+  /** `progress-lg`: barra de disponibilidad por tipo de entrada. */
+  progressLg: 10,
   tabHeight: 48,
   avatarLg: 52,
   avatarMd: 44,

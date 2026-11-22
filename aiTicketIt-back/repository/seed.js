@@ -22,6 +22,20 @@ export const compradoresSeed = [
     ["cmp-4", "Diego", "Romero", "diego.romero@correo.com"],
     ["cmp-5", "Valentina", "Sosa", "valentina.sosa@correo.com"],
   ].map(([id, nombre, apellido, email]) => ({ id, nombre, apellido, email, contrasenaHash: HASH_CONTRASENA_DESARROLLO })),
+  // Compradores de ejemplo de la feature 005 (specs/005-panel-evento/data-model.md § Comprador (seed)):
+  // autores de las compras generadas, para que el panel del evento tenga ventas (research R8).
+  ...[
+    ["cmp-6", "Camila", "Torres", "camila.torres@correo.com"],
+    ["cmp-7", "Joaquín", "Díaz", "joaquin.diaz@correo.com"],
+    ["cmp-8", "Florencia", "Ruiz", "florencia.ruiz@correo.com"],
+    ["cmp-9", "Tomás", "Herrera", "tomas.herrera@correo.com"],
+    ["cmp-10", "Agustina", "Medina", "agustina.medina@correo.com"],
+    ["cmp-11", "Nicolás", "Castro", "nicolas.castro@correo.com"],
+    ["cmp-12", "Micaela", "Ríos", "micaela.rios@correo.com"],
+    ["cmp-13", "Facundo", "Acosta", "facundo.acosta@correo.com"],
+    ["cmp-14", "Julieta", "Benítez", "julieta.benitez@correo.com"],
+    ["cmp-15", "Matías", "Molina", "matias.molina@correo.com"],
+  ].map(([id, nombre, apellido, email]) => ({ id, nombre, apellido, email, contrasenaHash: HASH_CONTRASENA_DESARROLLO })),
 ];
 
 export const organizadoresSeed = [
@@ -204,7 +218,7 @@ export const imagenesSeed = ["hamlet", "risas", "bodas", "cartas", "impro", "tan
 /**
  * Compras Utilizadas y calificadas (specs/003-explorar-detalle-evento/data-model.md § Seed, research R17).
  * La calificación vive en la compra (research R7). Promedios: La Trama 4.5, Lumbre 4.0, Club del Chiste 3.7.
- * Las vendidas de los tipos de entrada no se recalculan desde estas compras.
+ * Las vendidas de los tipos de entrada no se recalculan: el generador de abajo completa las compras que faltan.
  */
 const compraCalificada = (numero, compradorId, eventoId, tipoDeEntradaId, cantidad, monto, medioDePago, dia, puntaje, comentario) => ({
   numero,
@@ -219,7 +233,7 @@ const compraCalificada = (numero, compradorId, eventoId, tipoDeEntradaId, cantid
   calificacion: { puntaje, comentario, calificadaEn: `${dia}T18:00:00-03:00` },
 });
 
-export const comprasSeed = [
+const comprasCalificadas = [
   // Compañía La Trama · Edipo Rey (2026-09-12)
   compraCalificada("A-0655", "cmp-1", "evt-7", "tip-12", 1, 10000, "Tarjeta de débito", "2026-09-13", 4, "Muy buena puesta, el final te deja pensando."),
   compraCalificada("A-0612", "cmp-2", "evt-7", "tip-12", 2, 20000, "Tarjeta de crédito", "2026-09-14", 5, "Impecable. Los actores muy cerca del público."),
@@ -233,3 +247,125 @@ export const comprasSeed = [
   compraCalificada("A-0547", "cmp-4", "evt-9", "tip-14", 1, 7000, "Tarjeta de crédito", "2026-08-24", 4, "Me reí mucho con el segundo comediante."),
   compraCalificada("A-0559", "cmp-5", "evt-9", "tip-14", 2, 14000, "Tarjeta de débito", "2026-08-25", 4, null),
 ];
+
+/**
+ * Compras de Sofía de pantallas.md que faltaban (mismos datos que el seed de la feature 004).
+ * A-0655 ya está entre las calificadas.
+ */
+const compra = (numero, compradorId, eventoId, tipoDeEntradaId, cantidad, monto, medioDePago, estado, creadaEn) => ({
+  numero,
+  compradorId,
+  eventoId,
+  tipoDeEntradaId,
+  cantidad,
+  monto,
+  medioDePago,
+  estado,
+  creadaEn,
+  calificacion: null,
+});
+
+const comprasDeSofia = [
+  compra("A-1042", "cmp-1", "evt-1", "tip-2", 2, 36000, "Tarjeta de crédito", "Confirmada", "2026-11-06T19:20:00-03:00"),
+  compra("A-1037", "cmp-1", "evt-2", "tip-4", 1, 9000, "Mercado Pago", "Pendiente de pago", "2026-11-04T11:05:00-03:00"),
+  compra("A-0871", "cmp-1", "evt-6", "tip-11", 2, 20000, "Tarjeta de débito", "Utilizada", "2026-10-05T16:40:00-03:00"),
+  compra("A-0790", "cmp-1", "evt-4", "tip-9", 1, 19000, "Tarjeta de crédito", "Reembolsada", "2026-09-30T10:15:00-03:00"),
+];
+
+const comprasBase = [...comprasCalificadas, ...comprasDeSofia];
+
+// Generador de ventas de ejemplo (specs/005-panel-evento/research.md R8; data-model.md § Seed de compras).
+const REFERENCIA_SEED = new Date("2026-11-09T00:00:00-03:00").getTime();
+const ULTIMO_DIA_DE_COMPRAS = new Date("2026-11-08T20:00:00-03:00").getTime();
+const CICLO_DE_CANTIDADES = [2, 1, 4, 2, 3, 1, 2, 6, 2, 3];
+const MEDIOS_DE_PAGO = ["Tarjeta de crédito", "Tarjeta de débito", "Mercado Pago", "Transferencia"];
+const COMPRADORES_GENERADOS = Array.from({ length: 10 }, (_, i) => `cmp-${i + 6}`);
+const ACTIVAS = new Set(["Pendiente de pago", "Confirmada", "Utilizada"]);
+const UN_DIA = 86_400_000;
+
+/** ISO con offset −03:00, redondeado al minuto. */
+function isoArgentina(ms) {
+  return `${new Date(Math.floor(ms / 60_000) * 60_000 - 3 * 3_600_000).toISOString().slice(0, 19)}-03:00`;
+}
+
+/**
+ * Compras que faltan para que, en cada tipo de entrada, las compras activas sumen exactamente sus
+ * `vendidas`. Determinística (sin azar): mismas entradas → mismas compras. No modifica sus argumentos.
+ */
+export function generarVentasDeEjemplo(eventos, comprasExistentes) {
+  const usados = new Set(comprasExistentes.map((c) => c.numero));
+  let siguiente = 100;
+  const nuevoNumero = () => {
+    while (usados.has(`A-${String(siguiente).padStart(4, "0")}`)) siguiente += 1;
+    const numero = `A-${String(siguiente).padStart(4, "0")}`;
+    usados.add(numero);
+    siguiente += 1;
+    return numero;
+  };
+
+  let rotacion = 0; // comprador y medio de pago rotan entre todas las compras generadas
+  const generadas = [];
+
+  for (const evento of eventos) {
+    if (!evento.fechaHora) continue;
+    const inicioEvento = new Date(evento.fechaHora).getTime();
+    const futuro = inicioEvento > REFERENCIA_SEED;
+    const existentes = comprasExistentes.filter((c) => c.eventoId === evento.id);
+
+    // Filas del evento sin número ni fecha: primero las que completan vendidas, después las extra.
+    const filas = [];
+    let indice = 0; // cuenta desde 1 las compras que completan vendidas de este evento
+    for (const tipo of evento.tiposDeEntrada) {
+      let faltan =
+        tipo.vendidas -
+        existentes.filter((c) => c.tipoDeEntradaId === tipo.id && ACTIVAS.has(c.estado)).reduce((t, c) => t + c.cantidad, 0);
+      while (faltan > 0) {
+        const cantidad = Math.min(CICLO_DE_CANTIDADES[indice % CICLO_DE_CANTIDADES.length], faltan);
+        faltan -= cantidad;
+        indice += 1;
+        const estado = futuro
+          ? indice % 6 === 0
+            ? "Pendiente de pago"
+            : "Confirmada"
+          : indice % 7 === 0
+            ? "Confirmada"
+            : "Utilizada";
+        filas.push({ tipo, cantidad, estado });
+      }
+    }
+
+    // Eventos futuros con ventas: una Cancelada y una Reembolsada (si no tenía ya una), que no ocupan lugares.
+    const conVentas = evento.tiposDeEntrada.some((t) => t.vendidas > 0);
+    if (futuro && conVentas) {
+      const primerTipo = evento.tiposDeEntrada[0];
+      filas.push({ tipo: primerTipo, cantidad: 1, estado: "Cancelada" });
+      if (!existentes.some((c) => c.estado === "Reembolsada")) filas.push({ tipo: primerTipo, cantidad: 2, estado: "Reembolsada" });
+    }
+
+    // Fechas repartidas entre la creación del evento y el día anterior (o el 2026-11-08).
+    const desde = new Date(evento.creadoEn).getTime();
+    const hasta = Math.min(inicioEvento - UN_DIA, ULTIMO_DIA_DE_COMPRAS);
+    filas.forEach(({ tipo, cantidad, estado }, j) => {
+      generadas.push({
+        numero: nuevoNumero(),
+        compradorId: COMPRADORES_GENERADOS[rotacion % COMPRADORES_GENERADOS.length],
+        eventoId: evento.id,
+        tipoDeEntradaId: tipo.id,
+        cantidad,
+        monto: tipo.precio * cantidad,
+        medioDePago: MEDIOS_DE_PAGO[rotacion % MEDIOS_DE_PAGO.length],
+        estado,
+        creadaEn: isoArgentina(desde + ((hasta - desde) * (j + 1)) / (filas.length + 1)),
+        calificacion: null,
+      });
+      rotacion += 1;
+    });
+  }
+  return generadas;
+}
+
+/**
+ * Todas las compras del seed: calificadas (003), las de Sofía (pantallas.md, 004) y las generadas (005).
+ * Las vendidas de cada tipo de entrada coinciden con sus compras activas (FR-018 de la feature 005).
+ */
+export const comprasSeed = [...comprasBase, ...generarVentasDeEjemplo(eventosSeed, comprasBase)];

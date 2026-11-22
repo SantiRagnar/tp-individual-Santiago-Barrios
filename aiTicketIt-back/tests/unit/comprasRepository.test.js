@@ -109,3 +109,62 @@ describe("comprasRepository.guardar", () => {
     assert.deepEqual(comprasRepository.resumenDeCalificaciones("org-1"), { suma: 18, cantidad: 4 });
   });
 });
+
+// specs/005-panel-evento/data-model.md § Compra · Operaciones nuevas del repositorio (research R3).
+describe("comprasRepository.listarPorEvento y todasDelEvento", () => {
+  const compraDe = (numero, creadaEn, estado = "Confirmada", eventoId = "evt-99") => ({
+    numero,
+    compradorId: "cmp-6",
+    eventoId,
+    tipoDeEntradaId: "tip-99",
+    cantidad: 1,
+    monto: 1000,
+    medioDePago: "Mercado Pago",
+    estado,
+    creadaEn,
+  });
+
+  const cargar = () => {
+    // Se guardan desordenadas: el índice las inserta en orden.
+    comprasRepository.guardar(compraDe("A-9002", "2026-10-02T10:00:00-03:00"), { organizadorId: "org-1" });
+    comprasRepository.guardar(compraDe("A-9004", "2026-10-04T10:00:00-03:00", "Pendiente de pago"), { organizadorId: "org-1" });
+    comprasRepository.guardar(compraDe("A-9001", "2026-10-01T10:00:00-03:00", "Cancelada"), { organizadorId: "org-1" });
+    comprasRepository.guardar(compraDe("A-9003", "2026-10-02T10:00:00-03:00"), { organizadorId: "org-1" });
+    comprasRepository.guardar(compraDe("A-9005", "2026-10-05T10:00:00-03:00", "Confirmada", "evt-98"), { organizadorId: "org-1" });
+  };
+
+  it("ordena por [creadaEn desc, numero desc]", () => {
+    cargar();
+    const numeros = comprasRepository.listarPorEvento("evt-99", { limite: 10 }).map((c) => c.numero);
+    assert.deepEqual(numeros, ["A-9004", "A-9003", "A-9002", "A-9001"]);
+  });
+
+  it("filtra por estado", () => {
+    cargar();
+    const numeros = comprasRepository.listarPorEvento("evt-99", { estado: "Confirmada", limite: 10 }).map((c) => c.numero);
+    assert.deepEqual(numeros, ["A-9003", "A-9002"]);
+  });
+
+  it("respeta el límite y arranca después de despuesDe", () => {
+    cargar();
+    const primera = comprasRepository.listarPorEvento("evt-99", { limite: 2 });
+    assert.deepEqual(primera.map((c) => c.numero), ["A-9004", "A-9003"]);
+    const segunda = comprasRepository.listarPorEvento("evt-99", { limite: 2, despuesDe: ["2026-10-02T10:00:00-03:00", "A-9003"] });
+    assert.deepEqual(segunda.map((c) => c.numero), ["A-9002", "A-9001"]);
+  });
+
+  it("todasDelEvento devuelve solo las de ese evento; un evento sin compras devuelve []", () => {
+    cargar();
+    assert.equal(comprasRepository.todasDelEvento("evt-99").length, 4);
+    assert.deepEqual(comprasRepository.todasDelEvento("evt-98").map((c) => c.numero), ["A-9005"]);
+    assert.deepEqual(comprasRepository.todasDelEvento("evt-404"), []);
+    assert.deepEqual(comprasRepository.listarPorEvento("evt-404", { limite: 5 }), []);
+  });
+
+  it("reiniciar vacía el índice y lo rearma desde el seed", () => {
+    cargar();
+    comprasRepository.reiniciar();
+    assert.deepEqual(comprasRepository.todasDelEvento("evt-99"), []);
+    assert.ok(comprasRepository.todasDelEvento("evt-7").some((c) => c.numero === "A-0655"));
+  });
+});

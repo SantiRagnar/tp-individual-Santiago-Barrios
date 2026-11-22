@@ -205,6 +205,13 @@ Dos columnas: formulario + vista previa de 400px.
 
 > **Versión mínima (feature 002):** Volver (→ Mis eventos), título ("Nombre del evento" si falta), "{fecha corta} · {sala}" ("Fecha a definir" / "Ubicación"), Tag de estado, **Editar evento** (secundario; no se muestra si está Finalizado) y **Consultas del evento** (secundario, deshabilitado al 45%, sin contador). Disponibilidad, Recaudado y Ventas llegan con su propia feature. Un evento inexistente o de otra compañía muestra "No encontramos el evento." + link a Mis eventos.
 
+> **Panel completo (feature 005):**
+> - **Disponibilidad:** un tipo sin cupo (solo en Borrador) muestra únicamente "0 / 0 vendidas", sin "Quedan" ni "Agotada".
+> - **Ventas:** se cargan de a 20, de la más reciente a la más antigua, con **Ver más** (secundario) para las 20 siguientes. Cambiar de chip vuelve a empezar desde las primeras 20. Los contadores de los chips y Recaudado son siempre del total del evento.
+> - **Marcar utilizada:** aparece solo en compras Confirmadas y desde las 00:00 (hora de Argentina) del día del evento, sin límite posterior. Antes de ese día no se muestra. No pide confirmación y no se puede deshacer.
+> - **Consultas del evento** sigue deshabilitado y sin contador, y la tabla no tiene botón de chat, hasta la feature de Consultas.
+> - Las compras de ejemplo del seed suman exactamente las vendidas de cada tipo de entrada.
+
 ### 05 · Consultas del evento
 - Volver; "Consultas del evento" + nombre del evento.
 - **Columna izquierda (380px):** lista de conversaciones (solo compras con mensajes): avatar con iniciales del comprador, nombre, hora del último mensaje, "Compra #id · {tipo} × {cantidad}", último mensaje, punto de no leído.

@@ -85,3 +85,25 @@ export function contadorEventos(n: number): string {
 export function contadorResenas(n: number): string {
   return n === 1 ? '1 reseña de eventos anteriores' : `${miles(n)} reseñas de eventos anteriores`;
 }
+
+// Panel del evento (feature 005, contracts/rutas-front.md § Organizadores 04).
+
+/** "A-1042" → "#A-1042". */
+export function numeroCompra(numero: string): string {
+  return `#${numero}`;
+}
+
+/** 1 → "1 entrada vendida"; 154 → "154 entradas vendidas". */
+export function textoEntradasVendidas(n: number): string {
+  return n === 1 ? '1 entrada vendida' : `${miles(n)} entradas vendidas`;
+}
+
+/** 1 → "1 compra activa"; 60 → "60 compras activas". */
+export function textoComprasActivas(n: number): string {
+  return n === 1 ? '1 compra activa' : `${miles(n)} compras activas`;
+}
+
+/** ("Platea", 2) → "Platea × 2"; sin nombre → "Sin nombre × 2". */
+export function entradasDeCompra(nombre: string | null, cantidad: number): string {
+  return `${nombre || 'Sin nombre'} × ${cantidad}`;
+}

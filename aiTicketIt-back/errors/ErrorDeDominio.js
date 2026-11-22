@@ -85,3 +85,23 @@ export class OrganizadorNoEncontrado extends ErrorDeDominio {
     super({ codigo: "ORGANIZADOR_NO_ENCONTRADO", mensaje: "No encontramos el organizador.", status: 404 });
   }
 }
+
+// Feature 005 (specs/005-panel-evento/data-model.md § Errores nuevos). COMPRA_NO_ENCONTRADA es el
+// mismo código y texto que define la feature 004.
+export class CompraNoEncontrada extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "COMPRA_NO_ENCONTRADA", mensaje: "No encontramos la compra.", status: 404 });
+  }
+}
+
+export class CompraNoConfirmada extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "COMPRA_NO_CONFIRMADA", mensaje: "La compra ya no está confirmada.", status: 409 });
+  }
+}
+
+export class EventoNoComenzo extends ErrorDeDominio {
+  constructor() {
+    super({ codigo: "EVENTO_NO_COMENZO", mensaje: "Todavía no es el día del evento.", status: 409 });
+  }
+}

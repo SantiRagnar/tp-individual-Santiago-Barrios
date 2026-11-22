@@ -52,7 +52,7 @@ export function MaterialMultimediaEditor({ archivos, onChange }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel={`Quitar ${archivo.nombre}`}
                 hitSlop={space.s3}
-                style={({ hovered }: { hovered?: boolean }) => [styles.quitar, hovered && { backgroundColor: tinte.textoHover }]}>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [styles.quitar, hovered && { backgroundColor: tinte.textoHover }]}>
                 <X size={iconSize.enLinea} color={color.neutral100} />
               </Pressable>
             </View>

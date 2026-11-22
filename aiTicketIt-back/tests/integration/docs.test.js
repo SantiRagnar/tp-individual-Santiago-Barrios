@@ -114,3 +114,28 @@ describe("/docs.json — explorar, detalle y favoritos (feature 003)", () => {
     assert.ok(body.components.responses.EventoNoEncontrado);
   });
 });
+
+// Debe coincidir con specs/005-panel-evento/contracts/ventas.openapi.yaml (Principio IV).
+const ESPERADO_VENTAS = {
+  "/organizadores/eventos/{id}/ventas": { get: ["200", "400", "401", "404"] },
+  "/organizadores/eventos/{id}/ventas/{numero}/utilizacion": { post: ["200", "401", "404", "409"] },
+};
+
+describe("/docs.json — ventas del evento (feature 005)", () => {
+  it("documenta los endpoints con sus métodos, respuestas y el tag Ventas del evento", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const [ruta, metodos] of Object.entries(ESPERADO_VENTAS)) {
+      const documentada = body.paths[ruta];
+      assert.ok(documentada, `falta ${ruta}`);
+      const metodosDocumentados = Object.keys(documentada).filter((k) => k !== "parameters");
+      assert.deepEqual(metodosDocumentados.sort(), Object.keys(metodos).sort(), ruta);
+      for (const [metodo, codigos] of Object.entries(metodos)) {
+        assert.deepEqual(Object.keys(documentada[metodo].responses).sort(), codigos, `${metodo.toUpperCase()} ${ruta}`);
+        assert.deepEqual(documentada[metodo].tags, ["Ventas del evento"], `${metodo.toUpperCase()} ${ruta}`);
+      }
+    }
+    for (const schema of ["EstadoCompra", "MedioDePago", "Venta", "ResumenDeVentas", "PaginaDeVentas"]) {
+      assert.ok(body.components.schemas[schema], `falta el schema ${schema}`);
+    }
+  });
+});

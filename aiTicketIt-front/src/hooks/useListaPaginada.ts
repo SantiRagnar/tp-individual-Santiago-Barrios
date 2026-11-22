@@ -108,5 +108,13 @@ export function useListaPaginada<T extends { id: string }>(
     /** Reemplaza un elemento ya cargado (p. ej. al cambiar su favorito). */
     actualizar: (id: string, cambio: (item: T) => T) =>
       setEstado((e) => ({ ...e, items: e.items.map((item) => (item.id === id ? cambio(item) : item)) })),
+    /** Quita un elemento ya cargado sin volver a pedir (p. ej. una venta que dejó de cumplir el filtro). */
+    quitar: (id: string) =>
+      setEstado((e) => ({ ...e, items: e.items.filter((item) => item.id !== id), total: Math.max(0, e.total - 1) })),
+    /** Vuelve a pedir la primera página del criterio actual (p. ej. después de un 409). */
+    recargar: () => {
+      setEstado(VACIO);
+      setIntento((i) => i + 1);
+    },
   };
 }

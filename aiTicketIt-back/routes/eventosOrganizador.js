@@ -2,7 +2,10 @@ import { Router } from "express";
 import { eventosOrganizadorController as controller } from "../controllers/eventosOrganizadorController.js";
 import { requiereSesion } from "../middlewares/requiereSesion.js";
 import { validar } from "../middlewares/validar.js";
+import { validarQuery } from "../middlewares/validarQuery.js";
 import { eventoSchema } from "../schemas/eventoSchema.js";
+import { ventasSchema } from "../schemas/ventasSchema.js";
+import { ventasController } from "../controllers/ventasController.js";
 
 /** Eventos del organizador con sesión. Se monta en /organizadores/eventos. */
 export function crearRouterEventosOrganizador() {
@@ -13,6 +16,9 @@ export function crearRouterEventosOrganizador() {
   router.post("/", validar(eventoSchema), controller.crear);
   router.get("/:id", controller.obtener);
   router.put("/:id", validar(eventoSchema), controller.editar);
+  // Panel del evento (feature 005): ventas y marcar utilizada.
+  router.get("/:id/ventas", validarQuery(ventasSchema), ventasController.listar);
+  router.post("/:id/ventas/:numero/utilizacion", ventasController.marcarUtilizada);
 
   return router;
 }
@@ -240,4 +246,160 @@ export function crearRouterEventosOrganizador() {
  *                 value: { error: { codigo: EVENTO_FINALIZADO, mensaje: "El evento ya se realizó: no se puede editar." } }
  *               despublicar:
  *                 value: { error: { codigo: NO_SE_PUEDE_DESPUBLICAR, mensaje: "Un evento publicado no puede volver a borrador." } }
+ */
+
+/**
+ * @openapi
+ * tags:
+ *   - name: Ventas del evento
+ *
+ * components:
+ *   schemas:
+ *     EstadoCompra:
+ *       type: string
+ *       enum: [Pendiente de pago, Confirmada, Utilizada, Cancelada, Reembolsada]
+ *     MedioDePago:
+ *       type: string
+ *       enum: [Tarjeta de crédito, Tarjeta de débito, Mercado Pago, Transferencia]
+ *     Venta:
+ *       type: object
+ *       required: [numero, comprador, tipoDeEntrada, cantidad, estado, medioDePago, monto, creadaEn, acciones]
+ *       properties:
+ *         numero: { type: string, example: A-1042 }
+ *         comprador:
+ *           type: object
+ *           required: [nombre]
+ *           properties:
+ *             nombre: { type: string, description: "Nombre y apellido, o el email si falta el nombre", example: Sofía Gómez }
+ *         tipoDeEntrada:
+ *           type: object
+ *           required: [id, nombre]
+ *           properties:
+ *             id: { type: string, example: tip-2 }
+ *             nombre: { type: string, nullable: true, example: Platea }
+ *         cantidad: { type: integer, minimum: 1, example: 2 }
+ *         estado: { $ref: '#/components/schemas/EstadoCompra' }
+ *         medioDePago: { $ref: '#/components/schemas/MedioDePago' }
+ *         monto: { type: integer, description: En pesos, example: 36000 }
+ *         creadaEn: { type: string, format: date-time }
+ *         acciones:
+ *           type: object
+ *           required: [marcarUtilizada]
+ *           properties:
+ *             marcarUtilizada: { type: boolean, description: "Confirmada y ya es el día del evento (research R4)" }
+ *     ResumenDeVentas:
+ *       type: object
+ *       required: [recaudado, entradasVendidas, comprasActivas, porEstado]
+ *       properties:
+ *         recaudado: { type: integer, description: "Σ vendidas × precio por tipo de entrada", example: 2536000 }
+ *         entradasVendidas: { type: integer, example: 154 }
+ *         comprasActivas: { type: integer, description: "Compras que no están Canceladas ni Reembolsadas", example: 60 }
+ *         porEstado:
+ *           type: object
+ *           required: [Todas, Pendiente de pago, Confirmada, Utilizada, Cancelada, Reembolsada]
+ *           properties:
+ *             Todas: { type: integer, example: 62 }
+ *             Pendiente de pago: { type: integer, example: 9 }
+ *             Confirmada: { type: integer, example: 51 }
+ *             Utilizada: { type: integer, example: 0 }
+ *             Cancelada: { type: integer, example: 1 }
+ *             Reembolsada: { type: integer, example: 1 }
+ *     PaginaDeVentas:
+ *       type: object
+ *       required: [resumen, ventas, siguiente]
+ *       properties:
+ *         resumen: { $ref: '#/components/schemas/ResumenDeVentas' }
+ *         ventas:
+ *           type: array
+ *           maxItems: 20
+ *           items: { $ref: '#/components/schemas/Venta' }
+ *         siguiente: { type: string, nullable: true, description: "Cursor de la página siguiente o null" }
+ */
+
+/**
+ * @openapi
+ * /organizadores/eventos/{id}/ventas:
+ *   parameters:
+ *     - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+ *   get:
+ *     tags: [Ventas del evento]
+ *     summary: Resumen de ventas y una página de compras del evento (de a 20, la más reciente primero)
+ *     description: >
+ *       `resumen` es siempre del evento completo, sin importar el filtro ni la página (FR-006, FR-008).
+ *       Paginación por cursor (research R3): la primera página va sin cursor y las siguientes con el
+ *       `siguiente` de la respuesta anterior y el mismo `estado`. `siguiente` es null en la última página.
+ *       Un evento de otro organizador responde igual que uno inexistente (R6).
+ *     security: [{ bearer: [] }]
+ *     parameters:
+ *       - name: estado
+ *         in: query
+ *         description: Filtra por estado de compra. Ausente o vacío = Todas.
+ *         schema: { $ref: '#/components/schemas/EstadoCompra' }
+ *       - { name: cursor, in: query, schema: { type: string }, description: "Valor opaco de `siguiente`" }
+ *     responses:
+ *       200:
+ *         description: Resumen y página de ventas
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/PaginaDeVentas' }
+ *       400:
+ *         description: Estado inválido o cursor que no es válido
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *             example:
+ *               error:
+ *                 codigo: DATOS_INVALIDOS
+ *                 mensaje: Revisá los datos enviados.
+ *                 campos: [{ campo: estado, mensaje: Elegí un estado válido }]
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404: { $ref: '#/components/responses/EventoNoEncontrado' }
+ */
+
+/**
+ * @openapi
+ * /organizadores/eventos/{id}/ventas/{numero}/utilizacion:
+ *   parameters:
+ *     - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+ *     - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+ *   post:
+ *     tags: [Ventas del evento]
+ *     summary: Marcar utilizada — Confirmada → Utilizada
+ *     description: >
+ *       Solo sobre compras Confirmadas del evento y desde las 00:00 (hora de Argentina, −03:00) del día del
+ *       evento, sin límite posterior (FR-012 a FR-014, research R4). Sin cuerpo. Devuelve la fila actualizada y
+ *       el resumen del evento para refrescar chips y Recaudado sin recargar la lista (SC-004).
+ *     security: [{ bearer: [] }]
+ *     responses:
+ *       200:
+ *         description: Compra marcada como utilizada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [venta, resumen]
+ *               properties:
+ *                 venta: { $ref: '#/components/schemas/Venta' }
+ *                 resumen: { $ref: '#/components/schemas/ResumenDeVentas' }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404:
+ *         description: El evento no es del organizador o no existe, o la compra no existe o es de otro evento
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *             examples:
+ *               evento:
+ *                 value: { error: { codigo: EVENTO_NO_ENCONTRADO, mensaje: "No encontramos el evento." } }
+ *               compra:
+ *                 value: { error: { codigo: COMPRA_NO_ENCONTRADA, mensaje: "No encontramos la compra." } }
+ *       409:
+ *         description: La compra no está Confirmada, o todavía no es el día del evento
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *             examples:
+ *               noConfirmada:
+ *                 value: { error: { codigo: COMPRA_NO_CONFIRMADA, mensaje: "La compra ya no está confirmada." } }
+ *               antesDeTiempo:
+ *                 value: { error: { codigo: EVENTO_NO_COMENZO, mensaje: "Todavía no es el día del evento." } }
  */

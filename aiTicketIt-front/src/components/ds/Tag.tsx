@@ -1,6 +1,8 @@
+import { ArrowCounterClockwise, CheckCircle, Clock, Ticket, XCircle, type Icon } from 'phosphor-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { EstadoEvento } from '@/api/eventos';
+import type { EstadoCompra } from '@/api/ventas';
 import { color, radius, space, type } from '@/theme/tokens';
 
 export type VarianteTag = 'accent' | 'outline' | 'neutral';
@@ -20,10 +22,11 @@ const ESTILO: Record<VarianteTag, { fondo: string; borde: string; texto: string 
 };
 
 /** Etiqueta chica (radius-tag, 11px). La categoría del evento usa `neutral`. */
-export function Tag({ children, variante }: { children: string; variante: VarianteTag }) {
+export function Tag({ children, variante, Icono }: { children: string; variante: VarianteTag; Icono?: Icon }) {
   const e = ESTILO[variante];
   return (
-    <View style={[styles.tag, { backgroundColor: e.fondo, borderColor: e.borde }]}>
+    <View style={[styles.tag, Icono && styles.conIcono, { backgroundColor: e.fondo, borderColor: e.borde }]}>
+      {Icono ? <Icono size={type.meta.fontSize} color={e.texto} aria-hidden /> : null}
       <Text style={[type.meta, { color: e.texto }]}>{children}</Text>
     </View>
   );
@@ -31,6 +34,24 @@ export function Tag({ children, variante }: { children: string; variante: Varian
 
 export function TagEstado({ estado }: { estado: EstadoEvento }) {
   return <Tag variante={VARIANTE_POR_ESTADO[estado]}>{estado}</Tag>;
+}
+
+/** Mapeo fijo de design-system.md § Tag para los estados de compra (variante + ícono + palabra). */
+const TAG_POR_ESTADO_COMPRA: Record<EstadoCompra, { variante: VarianteTag; Icono: Icon }> = {
+  'Pendiente de pago': { variante: 'outline', Icono: Clock },
+  Confirmada: { variante: 'accent', Icono: CheckCircle },
+  Utilizada: { variante: 'neutral', Icono: Ticket },
+  Cancelada: { variante: 'neutral', Icono: XCircle },
+  Reembolsada: { variante: 'neutral', Icono: ArrowCounterClockwise },
+};
+
+export function TagEstadoCompra({ estado }: { estado: EstadoCompra }) {
+  const { variante, Icono } = TAG_POR_ESTADO_COMPRA[estado];
+  return (
+    <Tag variante={variante} Icono={Icono}>
+      {estado}
+    </Tag>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -41,4 +62,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.s2,
     paddingVertical: space.s1 / 2,
   },
+  conIcono: { flexDirection: 'row', alignItems: 'center', gap: space.s1 },
 });

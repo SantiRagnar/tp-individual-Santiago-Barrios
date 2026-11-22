@@ -6,6 +6,8 @@ import { comprasSeed, eventosSeed } from "./seed.js";
 // reseñas no recorran todas las compras en cada pedido (research R8).
 const porNumero = new Map();
 const calificacionesPorOrganizador = new Map(); // organizadorId → { calificadas: Compra[], suma, cantidad }
+// Feature 005 (research R3): compras de cada evento ordenadas por [creadaEn desc, numero desc].
+const comprasPorEvento = new Map(); // eventoId → Compra[]
 
 /** Orden de las reseñas: [calificadaEn desc, numero desc]. Negativo si `a` va antes que `b`. */
 function compararClaves([fechaA, numeroA], [fechaB, numeroB]) {
@@ -15,6 +17,14 @@ function compararClaves([fechaA, numeroA], [fechaB, numeroB]) {
 }
 
 const claveDe = (compra) => [compra.calificacion.calificadaEn, compra.numero];
+const claveDeVenta = (compra) => [compra.creadaEn, compra.numero];
+
+/** Inserta `compra` en `lista` respetando el orden de `compararClaves` sobre `clave`. */
+function insertarOrdenada(lista, compra, clave) {
+  const propia = clave(compra);
+  const posicion = lista.findIndex((otra) => compararClaves(propia, clave(otra)) < 0);
+  lista.splice(posicion === -1 ? lista.length : posicion, 0, compra);
+}
 
 function indiceDe(organizadorId) {
   let indice = calificacionesPorOrganizador.get(organizadorId);
@@ -28,14 +38,26 @@ function indiceDe(organizadorId) {
 /** Guarda una compra. `organizadorId` es el del evento de la compra (lo necesita el índice). */
 export function guardar(datos, { organizadorId }) {
   const compra = datos instanceof Compra ? datos : new Compra(datos);
+  const anterior = porNumero.get(compra.numero);
   porNumero.set(compra.numero, compra);
+
+  // Índice por evento: si la compra ya estaba (se vuelve a guardar), se reemplaza.
+  let delEvento = comprasPorEvento.get(compra.eventoId);
+  if (!delEvento) {
+    delEvento = [];
+    comprasPorEvento.set(compra.eventoId, delEvento);
+  }
+  if (anterior) {
+    const lista = comprasPorEvento.get(anterior.eventoId);
+    const posicion = lista?.indexOf(anterior) ?? -1;
+    if (posicion !== -1) lista.splice(posicion, 1);
+  }
+  insertarOrdenada(delEvento, compra, claveDeVenta);
 
   if (compra.calificacion) {
     const indice = indiceDe(organizadorId);
-    const clave = claveDe(compra);
     // Inserción ordenada: las compras del seed y de tests llegan en cualquier orden.
-    const posicion = indice.calificadas.findIndex((otra) => compararClaves(clave, claveDe(otra)) < 0);
-    indice.calificadas.splice(posicion === -1 ? indice.calificadas.length : posicion, 0, compra);
+    insertarOrdenada(indice.calificadas, compra, claveDe);
     indice.suma += compra.calificacion.puntaje;
     indice.cantidad += 1;
   }
@@ -64,9 +86,31 @@ export function listarCalificadas(organizadorId, { despuesDe = null, limite }) {
   return indice.calificadas.slice(desde, desde + limite);
 }
 
+/**
+ * Hasta `limite` compras del evento, de la más reciente a la más antigua ([creadaEn desc, numero desc]),
+ * solo del `estado` si se indica, empezando después de la clave `despuesDe` ([creadaEn, numero]).
+ */
+export function listarPorEvento(eventoId, { estado = null, despuesDe = null, limite }) {
+  const delEvento = comprasPorEvento.get(eventoId) ?? [];
+  const resultado = [];
+  for (const compra of delEvento) {
+    if (despuesDe && compararClaves(claveDeVenta(compra), despuesDe) <= 0) continue;
+    if (estado && compra.estado !== estado) continue;
+    resultado.push(compra);
+    if (resultado.length === limite) break;
+  }
+  return resultado;
+}
+
+/** Todas las compras del evento (para el resumen de ventas). */
+export function todasDelEvento(eventoId) {
+  return [...(comprasPorEvento.get(eventoId) ?? [])];
+}
+
 export function reiniciar() {
   porNumero.clear();
   calificacionesPorOrganizador.clear();
+  comprasPorEvento.clear();
   const organizadorDe = new Map(eventosSeed.map((e) => [e.id, e.organizadorId]));
   // structuredClone: los tests pueden modificar compras sin tocar el seed.
   comprasSeed.forEach((datos) => guardar(structuredClone(datos), { organizadorId: organizadorDe.get(datos.eventoId) }));

@@ -1,0 +1,181 @@
+openapi: 3.0.0
+info:
+  title: AI Ticket It API — Panel del evento: ventas y marcar utilizada (feature 005)
+  version: 1.0.0
+  description: >
+    Se copia a comentarios @openapi en routes/eventosOrganizador.js (mismo router, montado en
+    /organizadores/eventos, con requiereSesion("organizador")). Reutiliza de las features 001 a 003:
+    securitySchemes.bearer, schemas.Error, responses.SesionInvalida y responses.EventoNoEncontrado.
+    La cabecera y la disponibilidad por tipo de entrada usan el GET /organizadores/eventos/{id} existente
+    (feature 002), sin cambios (research R1). Un evento ajeno responde igual que uno inexistente (R6).
+
+tags:
+  - name: Ventas del evento
+
+paths:
+  /organizadores/eventos/{id}/ventas:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+    get:
+      tags: [Ventas del evento]
+      summary: Resumen de ventas y una página de compras del evento (de a 20, la más reciente primero)
+      description: >
+        `resumen` es siempre del evento completo, sin importar el filtro ni la página (FR-006, FR-008).
+        Paginación por cursor (R3): la primera página va sin cursor y las siguientes con el `siguiente`
+        de la respuesta anterior y el mismo `estado`. `siguiente` es null en la última página.
+      security: [{ bearer: [] }]
+      parameters:
+        - name: estado
+          in: query
+          description: Filtra por estado de compra. Ausente o vacío = Todas.
+          schema: { $ref: '#/components/schemas/EstadoCompra' }
+        - { name: cursor, in: query, schema: { type: string }, description: "Valor opaco de `siguiente`" }
+      responses:
+        "200":
+          description: Resumen y página de ventas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaDeVentas' }
+              example:
+                resumen:
+                  recaudado: 2536000
+                  entradasVendidas: 154
+                  comprasActivas: 60
+                  porEstado:
+                    Todas: 62
+                    Pendiente de pago: 9
+                    Confirmada: 51
+                    Utilizada: 0
+                    Cancelada: 1
+                    Reembolsada: 1
+                ventas:
+                  - numero: A-1042
+                    comprador: { nombre: Sofía Gómez }
+                    tipoDeEntrada: { id: tip-2, nombre: Platea }
+                    cantidad: 2
+                    estado: Confirmada
+                    medioDePago: Tarjeta de crédito
+                    monto: 36000
+                    creadaEn: "2026-11-06T19:20:00-03:00"
+                    acciones: { marcarUtilizada: false }
+                siguiente: WyIyMDI2LTExLTA2VDE5OjIwOjAwLTAzOjAwIiwiQS0xMDQyIl0
+        "400":
+          description: Estado inválido o cursor que no es válido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example:
+                error:
+                  codigo: DATOS_INVALIDOS
+                  mensaje: Revisá los datos enviados.
+                  campos: [{ campo: estado, mensaje: Elegí un estado válido }]
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404": { $ref: '#/components/responses/EventoNoEncontrado' }
+
+  /organizadores/eventos/{id}/ventas/{numero}/utilizacion:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+      - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+    post:
+      tags: [Ventas del evento]
+      summary: Marcar utilizada — Confirmada → Utilizada
+      description: >
+        Solo sobre compras Confirmadas del evento y desde las 00:00 (hora de Argentina, −03:00) del día del
+        evento, sin límite posterior (FR-012 a FR-014, research R4). Sin cuerpo. Devuelve la fila actualizada y el
+        resumen del evento para refrescar chips y Recaudado sin recargar la lista (SC-004).
+      security: [{ bearer: [] }]
+      responses:
+        "200":
+          description: Compra marcada como utilizada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [venta, resumen]
+                properties:
+                  venta: { $ref: '#/components/schemas/Venta' }
+                  resumen: { $ref: '#/components/schemas/ResumenDeVentas' }
+        "401": { $ref: '#/components/responses/SesionInvalida' }
+        "404":
+          description: El evento no es del organizador o no existe, o la compra no existe o es de otro evento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                evento:
+                  value: { error: { codigo: EVENTO_NO_ENCONTRADO, mensaje: "No encontramos el evento." } }
+                compra:
+                  value: { error: { codigo: COMPRA_NO_ENCONTRADA, mensaje: "No encontramos la compra." } }
+        "409":
+          description: La compra no está Confirmada, o todavía no es el día del evento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                noConfirmada:
+                  value: { error: { codigo: COMPRA_NO_CONFIRMADA, mensaje: "La compra ya no está confirmada." } }
+                antesDeTiempo:
+                  value: { error: { codigo: EVENTO_NO_COMENZO, mensaje: "Todavía no es el día del evento." } }
+
+components:
+  schemas:
+    EstadoCompra:
+      type: string
+      enum: [Pendiente de pago, Confirmada, Utilizada, Cancelada, Reembolsada]
+    MedioDePago:
+      type: string
+      enum: [Tarjeta de crédito, Tarjeta de débito, Mercado Pago, Transferencia]
+    Venta:
+      type: object
+      required: [numero, comprador, tipoDeEntrada, cantidad, estado, medioDePago, monto, creadaEn, acciones]
+      properties:
+        numero: { type: string, example: A-1042 }
+        comprador:
+          type: object
+          required: [nombre]
+          properties:
+            nombre: { type: string, description: "Nombre y apellido, o el email si falta el nombre", example: Sofía Gómez }
+        tipoDeEntrada:
+          type: object
+          required: [id, nombre]
+          properties:
+            id: { type: string, example: tip-2 }
+            nombre: { type: string, nullable: true, example: Platea }
+        cantidad: { type: integer, minimum: 1, example: 2 }
+        estado: { $ref: '#/components/schemas/EstadoCompra' }
+        medioDePago: { $ref: '#/components/schemas/MedioDePago' }
+        monto: { type: integer, description: En pesos, example: 36000 }
+        creadaEn: { type: string, format: date-time }
+        acciones:
+          type: object
+          required: [marcarUtilizada]
+          properties:
+            marcarUtilizada: { type: boolean, description: "Confirmada y ya es el día del evento (R4)" }
+    ResumenDeVentas:
+      type: object
+      required: [recaudado, entradasVendidas, comprasActivas, porEstado]
+      properties:
+        recaudado: { type: integer, description: "Σ vendidas × precio por tipo de entrada", example: 2536000 }
+        entradasVendidas: { type: integer, example: 154 }
+        comprasActivas: { type: integer, description: "Compras que no están Canceladas ni Reembolsadas" }
+        porEstado:
+          type: object
+          required: [Todas, Pendiente de pago, Confirmada, Utilizada, Cancelada, Reembolsada]
+          additionalProperties: false
+          properties:
+            Todas: { type: integer }
+            Pendiente de pago: { type: integer }
+            Confirmada: { type: integer }
+            Utilizada: { type: integer }
+            Cancelada: { type: integer }
+            Reembolsada: { type: integer }
+    PaginaDeVentas:
+      type: object
+      required: [resumen, ventas, siguiente]
+      properties:
+        resumen: { $ref: '#/components/schemas/ResumenDeVentas' }
+        ventas:
+          type: array
+          maxItems: 20
+          items: { $ref: '#/components/schemas/Venta' }
+        siguiente: { type: string, nullable: true, description: "Cursor de la página siguiente o null" }

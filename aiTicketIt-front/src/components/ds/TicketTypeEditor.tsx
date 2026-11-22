@@ -55,7 +55,7 @@ export function TicketTypeEditor({ tipos, errorDe, onCambiar, onSalir, onAgregar
                   accessibilityLabel={`Quitar entrada ${numero}`}
                   accessibilityHint={conVentas ? 'Tiene ventas: no se puede quitar' : undefined}
                   accessibilityState={{ disabled: conVentas }}
-                  style={({ hovered, focused }: { hovered?: boolean; focused?: boolean }) => [
+                  style={({ hovered, focused }: { pressed: boolean; hovered?: boolean; focused?: boolean }) => [
                     styles.quitar,
                     conVentas && { opacity: opacidadDeshabilitado },
                     !conVentas && hovered && { backgroundColor: tinte.textoHover },
@@ -114,7 +114,7 @@ export function TicketTypeEditor({ tipos, errorDe, onCambiar, onSalir, onAgregar
         <Pressable
           onPress={onAgregar}
           accessibilityRole="button"
-          style={({ hovered, focused }: { hovered?: boolean; focused?: boolean }) => [
+          style={({ hovered, focused }: { pressed: boolean; hovered?: boolean; focused?: boolean }) => [
             styles.tile,
             { width: celda },
             hovered && { backgroundColor: tinte.acentoHover },
