@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ErrorApi } from '@/api/cliente';
+import { listarConsultasDelEvento } from '@/api/consultas';
 import { obtenerEvento, type Evento } from '@/api/eventos';
 import { listarVentas, marcarUtilizada, type EstadoCompra, type ResumenDeVentas, type Venta } from '@/api/ventas';
 import { Button } from '@/components/ds/Button';
@@ -60,11 +61,19 @@ export default function DetalleEvento() {
 
   // Recarga al recibir foco (p. ej. al volver de Editar evento). `version` reinicia también las ventas.
   const [version, setVersion] = useState(0);
+  // Contador de "Consultas del evento" (feature 007, FR-009). Si falla, el botón queda sin contador.
+  const [noLeidas, setNoLeidas] = useState(0);
   useFocusEffect(
     useCallback(() => {
       void cargar();
       setVersion((v) => v + 1);
-    }, [cargar]),
+      if (token && id) {
+        listarConsultasDelEvento(token, id).then(
+          (r) => setNoLeidas(r.noLeidas),
+          () => setNoLeidas(0),
+        );
+      }
+    }, [cargar, token, id]),
   );
 
   if (!organizador) return null;
@@ -91,7 +100,7 @@ export default function DetalleEvento() {
 
         {estado.tipo === 'listo' && token ? (
           <>
-            <Cabecera evento={estado.evento} />
+            <Cabecera evento={estado.evento} noLeidas={noLeidas} />
             <Panel
               key={`${estado.evento.id}-${version}`}
               evento={estado.evento}
@@ -117,7 +126,7 @@ function NoEncontrado() {
   );
 }
 
-function Cabecera({ evento }: { evento: Evento }) {
+function Cabecera({ evento, noLeidas }: { evento: Evento; noLeidas: number }) {
   return (
     <View style={styles.pageHead}>
       <View style={styles.titulo}>
@@ -140,8 +149,11 @@ function Cabecera({ evento }: { evento: Evento }) {
             Editar evento
           </Button>
         )}
-        {/* Sin contador: las consultas llegan con su propia feature (FR-002). */}
-        <Button variante="secondary" compacto disabled>
+        <Button
+          variante="secondary"
+          compacto
+          contador={noLeidas}
+          onPress={() => router.push({ pathname: '/organizadores/eventos/[id]/consultas', params: { id: evento.id } })}>
           Consultas del evento
         </Button>
       </View>
@@ -269,7 +281,14 @@ function Panel({
           <Text style={[type.bodySm, { color: color.textMuted }]}>No hay ventas con este estado.</Text>
         ) : (
           <>
-            <TablaVentas ventas={lista.items} onMarcarUtilizada={(n) => void marcar(n)} numeroEnCurso={numeroEnCurso} />
+            <TablaVentas
+              ventas={lista.items}
+              onMarcarUtilizada={(n) => void marcar(n)}
+              onAbrirConsulta={(numero) =>
+                router.push({ pathname: '/organizadores/eventos/[id]/consultas', params: { id: evento.id, compra: numero } })
+              }
+              numeroEnCurso={numeroEnCurso}
+            />
             {lista.error === 'siguiente' ? (
               <View style={styles.bloque} accessibilityLiveRegion="polite">
                 <Text style={[type.bodySm, { color: color.text }]}>{SIN_CONEXION}</Text>

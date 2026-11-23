@@ -8,7 +8,8 @@ import { diasParaEvento, motivoNoCancelable, puedeCompletarPago } from "../servi
 
 const urlDeImagen = (imagenId) => (imagenId ? `/imagenes/${imagenId}` : null);
 
-export function aCompraDto(compra, evento, organizador, ahora) {
+/** `consultaNoLeida` lo calcula comprasService (feature 007, FR-023): el DTO no lee repositorios. */
+export function aCompraDto(compra, evento, organizador, ahora, { consultaNoLeida = false } = {}) {
   const motivo = motivoNoCancelable(compra, evento, ahora);
   const motivoCalificar = motivoNoCalificable(compra);
   return {
@@ -38,5 +39,6 @@ export function aCompraDto(compra, evento, organizador, ahora) {
     },
     motivoNoCancelable: motivo,
     motivoNoCalificable: motivoCalificar,
+    consultaNoLeida,
   };
 }

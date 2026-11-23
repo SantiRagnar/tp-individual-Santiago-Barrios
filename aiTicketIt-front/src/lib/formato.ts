@@ -137,3 +137,13 @@ export function textoComprasActivas(n: number): string {
 export function entradasDeCompra(nombre: string | null, cantidad: number): string {
   return `${nombre || 'Sin nombre'} × ${cantidad}`;
 }
+
+// Feature 007 (specs/007-consultas-chat/research.md R11).
+
+/** Hora de un mensaje: "21:04" si es de hoy; "Sáb 21 nov · 21:04" si es de otro día. */
+export function horaDeMensaje(iso: string, ahora: Date = new Date()): string {
+  const fecha = new Date(iso);
+  const mismoDia =
+    fecha.getFullYear() === ahora.getFullYear() && fecha.getMonth() === ahora.getMonth() && fecha.getDate() === ahora.getDate();
+  return mismoDia ? `${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')}` : fechaCorta(iso);
+}

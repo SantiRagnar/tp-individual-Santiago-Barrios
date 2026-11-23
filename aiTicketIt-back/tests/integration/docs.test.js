@@ -200,3 +200,43 @@ describe("/docs.json — calificaciones (feature 006)", () => {
     assert.ok(compra.required.includes("motivoNoCalificable"));
   });
 });
+
+// Debe coincidir con specs/007-consultas-chat/contracts/consultas.openapi.yaml (Principio IV).
+const ESPERADO_CONSULTAS = {
+  "/compradores/compras/{numero}/mensajes": { get: ["200", "400", "401", "404"], post: ["201", "400", "401", "404"] },
+  "/compradores/compras/{numero}/mensajes/lectura": { put: ["204", "401", "404"] },
+  "/compradores/consultas/no-leidas": { get: ["200", "401"] },
+  "/organizadores/eventos/{id}/consultas": { get: ["200", "401", "404"] },
+  "/organizadores/eventos/{id}/consultas/{numero}": { get: ["200", "400", "401", "404"] },
+  "/organizadores/eventos/{id}/consultas/{numero}/mensajes": { post: ["201", "400", "401", "404"] },
+  "/organizadores/eventos/{id}/consultas/{numero}/lectura": { put: ["204", "401", "404"] },
+};
+
+describe("/docs.json — consultas (feature 007)", () => {
+  it("documenta los 8 endpoints con sus métodos, respuestas y tags", async () => {
+    const { body } = await request(app).get("/docs.json");
+    let operaciones = 0;
+    for (const [ruta, metodos] of Object.entries(ESPERADO_CONSULTAS)) {
+      const documentada = body.paths[ruta];
+      assert.ok(documentada, `falta ${ruta}`);
+      const metodosDocumentados = Object.keys(documentada).filter((k) => k !== "parameters");
+      assert.deepEqual(metodosDocumentados.sort(), Object.keys(metodos).sort(), ruta);
+      for (const [metodo, codigos] of Object.entries(metodos)) {
+        operaciones += 1;
+        assert.deepEqual(Object.keys(documentada[metodo].responses).sort(), codigos, `${metodo.toUpperCase()} ${ruta}`);
+        const tag = ruta.startsWith("/compradores") ? "Consultas (comprador)" : "Consultas (organizador)";
+        assert.deepEqual(documentada[metodo].tags, [tag], `${metodo.toUpperCase()} ${ruta}`);
+      }
+    }
+    assert.equal(operaciones, 8);
+  });
+
+  it("define los schemas nuevos y el campo consultaNoLeida en Compra", async () => {
+    const { body } = await request(app).get("/docs.json");
+    for (const schema of ["Mensaje", "NuevoMensaje", "ConsultaResumen", "ConsultaNoLeida"]) {
+      assert.ok(body.components.schemas[schema], `falta el schema ${schema}`);
+    }
+    assert.ok(body.components.schemas.Compra.properties.consultaNoLeida);
+    assert.ok(body.components.schemas.Compra.required.includes("consultaNoLeida"));
+  });
+});

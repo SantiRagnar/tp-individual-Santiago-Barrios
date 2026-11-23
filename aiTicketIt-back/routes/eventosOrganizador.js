@@ -6,6 +6,8 @@ import { validarQuery } from "../middlewares/validarQuery.js";
 import { eventoSchema } from "../schemas/eventoSchema.js";
 import { ventasSchema } from "../schemas/ventasSchema.js";
 import { ventasController } from "../controllers/ventasController.js";
+import { consultasController } from "../controllers/consultasController.js";
+import { consultaQuerySchema, mensajeSchema } from "../schemas/mensajeSchema.js";
 
 /** Eventos del organizador con sesión. Se monta en /organizadores/eventos. */
 export function crearRouterEventosOrganizador() {
@@ -19,6 +21,11 @@ export function crearRouterEventosOrganizador() {
   // Panel del evento (feature 005): ventas y marcar utilizada.
   router.get("/:id/ventas", validarQuery(ventasSchema), ventasController.listar);
   router.post("/:id/ventas/:numero/utilizacion", ventasController.marcarUtilizada);
+  // Consultas del evento (feature 007).
+  router.get("/:id/consultas", consultasController.consultasDelEvento);
+  router.get("/:id/consultas/:numero", validarQuery(consultaQuerySchema), consultasController.consultaDeCompra);
+  router.post("/:id/consultas/:numero/mensajes", validar(mensajeSchema), consultasController.enviarComoOrganizador);
+  router.put("/:id/consultas/:numero/lectura", consultasController.marcarLeidaOrganizador);
 
   return router;
 }
@@ -402,4 +409,136 @@ export function crearRouterEventosOrganizador() {
  *                 value: { error: { codigo: COMPRA_NO_CONFIRMADA, mensaje: "La compra ya no está confirmada." } }
  *               antesDeTiempo:
  *                 value: { error: { codigo: EVENTO_NO_COMENZO, mensaje: "Todavía no es el día del evento." } }
+ */
+
+/**
+ * @openapi
+ * tags:
+ *   - name: Consultas (organizador)
+ *
+ * components:
+ *   schemas:
+ *     ConsultaResumen:
+ *       type: object
+ *       required: [numero, comprador, tipoDeEntrada, cantidad, monto, estado, ultimoMensaje, noLeida]
+ *       properties:
+ *         numero: { type: string, example: A-1042 }
+ *         comprador:
+ *           type: object
+ *           required: [nombre]
+ *           properties: { nombre: { type: string, description: "Nombre y apellido, o el email si faltan" } }
+ *         tipoDeEntrada:
+ *           type: object
+ *           required: [nombre]
+ *           properties: { nombre: { type: string, nullable: true } }
+ *         cantidad: { type: integer, minimum: 1 }
+ *         monto: { type: integer, minimum: 0 }
+ *         estado: { $ref: '#/components/schemas/EstadoCompra' }
+ *         ultimoMensaje:
+ *           allOf: [{ $ref: '#/components/schemas/Mensaje' }]
+ *           nullable: true
+ *         noLeida: { type: boolean, description: "Para el organizador (FR-015)" }
+ *
+ * /organizadores/eventos/{id}/consultas:
+ *   parameters:
+ *     - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+ *   get:
+ *     tags: [Consultas (organizador)]
+ *     summary: Consultas del evento (solo compras con mensajes) y cantidad de no leídas
+ *     description: >
+ *       Ordenadas por el último mensaje, la más reciente primero (FR-010). `noLeidas` alimenta el contador de
+ *       "Consultas del evento" (FR-009). Un evento ajeno responde igual que uno inexistente. No marca nada como leído.
+ *     security: [{ bearer: [] }]
+ *     responses:
+ *       200:
+ *         description: Consultas del evento
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [consultas, noLeidas]
+ *               properties:
+ *                 consultas: { type: array, items: { $ref: '#/components/schemas/ConsultaResumen' } }
+ *                 noLeidas: { type: integer, minimum: 0 }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404: { $ref: '#/components/responses/EventoNoEncontrado' }
+ *
+ * /organizadores/eventos/{id}/consultas/{numero}:
+ *   parameters:
+ *     - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+ *     - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+ *   get:
+ *     tags: [Consultas (organizador)]
+ *     summary: Cabecera y mensajes de la consulta de una compra del evento
+ *     description: >
+ *       Funciona aunque la compra no tenga mensajes (se abre desde Ventas, FR-013). Con `despuesDe` trae solo los
+ *       mensajes nuevos (sondeo); la cabecera viene siempre, así el sondeo también actualiza el estado. No marca como leída.
+ *     security: [{ bearer: [] }]
+ *     parameters:
+ *       - { name: despuesDe, in: query, schema: { type: string }, example: msj-2 }
+ *     responses:
+ *       200:
+ *         description: Consulta
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [consulta, mensajes]
+ *               properties:
+ *                 consulta: { $ref: '#/components/schemas/ConsultaResumen' }
+ *                 mensajes: { type: array, items: { $ref: '#/components/schemas/Mensaje' } }
+ *       400: { $ref: '#/components/responses/DatosInvalidos' }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404:
+ *         description: Evento ajeno o inexistente (EVENTO_NO_ENCONTRADO), o compra que no es de ese evento (COMPRA_NO_ENCONTRADA)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *
+ * /organizadores/eventos/{id}/consultas/{numero}/mensajes:
+ *   parameters:
+ *     - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+ *     - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+ *   post:
+ *     tags: [Consultas (organizador)]
+ *     summary: Responder (o escribir primero) en la consulta de una compra del evento
+ *     description: El autor es siempre "organizador". Con la compra y el evento en cualquier estado (FR-004).
+ *     security: [{ bearer: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/NuevoMensaje' }
+ *           example: { texto: "Sí, hay lugar para dejarlo en el hall." }
+ *     responses:
+ *       201:
+ *         description: Mensaje creado
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/RespuestaMensaje' }
+ *       400: { $ref: '#/components/responses/DatosInvalidos' }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404:
+ *         description: Evento ajeno o inexistente, o compra que no es de ese evento
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
+ *
+ * /organizadores/eventos/{id}/consultas/{numero}/lectura:
+ *   parameters:
+ *     - { name: id, in: path, required: true, schema: { type: string }, example: evt-1 }
+ *     - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+ *   put:
+ *     tags: [Consultas (organizador)]
+ *     summary: Marcar la consulta como leída por el organizador (idempotente)
+ *     description: Al abrirla desde la lista o desde Ventas, y cuando el sondeo trae mensajes nuevos con la consulta abierta (FR-016).
+ *     security: [{ bearer: [] }]
+ *     responses:
+ *       204: { description: Marcada como leída }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404:
+ *         description: Evento ajeno o inexistente, o compra que no es de ese evento
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Error' }
  */

@@ -21,6 +21,7 @@ export default function OrganizadoresLayout() {
         <Stack.Screen name="eventos/nuevo" />
         <Stack.Screen name="eventos/[id]/index" />
         <Stack.Screen name="eventos/[id]/editar" />
+        <Stack.Screen name="eventos/[id]/consultas" />
       </Stack.Protected>
     </Stack>
   );

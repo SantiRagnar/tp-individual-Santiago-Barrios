@@ -46,6 +46,9 @@
 - **Un chat por compra**, entre el comprador y el organizador del evento.
 - Un mensaje tiene texto, hora y autor. No se envían mensajes vacíos. Enter envía.
 - El organizador ve las conversaciones agrupadas por evento; una conversación está **no leída** si el último mensaje es del comprador y el organizador todavía no la abrió. El botón "Consultas del evento ({cant})" muestra la cantidad de no leídas.
+- Feature 007: un mensaje tiene de 1 a 1000 caracteres (se recortan los espacios de los extremos). Se puede escribir con la compra en cualquier estado y con el evento ya realizado. El organizador puede escribir primero (desde Ventas).
+- Feature 007: para el comprador, la conversación está **no leída** si el último mensaje es del organizador y el comprador todavía no abrió el chat después de ese mensaje.
+- Feature 007: con el chat o Consultas abiertos, los mensajes nuevos aparecen solos en menos de 5 s.
 
 ### Favoritos
 - El comprador puede marcar/desmarcar eventos como favoritos (corazón) desde Explorar, Detalle y Favoritos.
@@ -126,6 +129,7 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Si está Utilizada: "Calificá tu experiencia" (→ Calificar experiencia) o, ya calificada, "Calificaste ★★★★☆".
 - Tocar una compra abre el Detalle de compra.
 - Feature 004: AppBar con Volver. Se recarga cada vez que se vuelve a la pantalla.
+- Feature 007: si la compra tiene una respuesta del organizador sin leer, la tarjeta muestra el `dot-unread` arriba a la derecha (también si está Cancelada o Reembolsada).
 - Vacío: "Todavía no compraste entradas — Cuando compres, vas a encontrarlas acá." + **Explorar eventos** (secundario).
 - Sin conexión: "No pudimos conectarnos. Probá de nuevo en un rato." + **Reintentar**.
 
@@ -139,7 +143,7 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - Nota de por qué no se puede cancelar (si aplica).
 - Acciones: **Tengo una consulta** (secundario → Chat de la compra) y **Cancelar compra** (ghost, solo si se puede cancelar).
 - Dialog "¿Cancelar la compra?" con el texto de reintegro o liberación de entradas; botones **Volver** y **Cancelar compra**.
-- Feature 004: **Tengo una consulta** se ve pero no tiene acción hasta su feature.
+- Feature 007: **Tengo una consulta** abre el Chat de la compra y muestra el `dot-unread` si hay una respuesta sin leer.
 - Compra inexistente o de otro comprador: AppBar con Volver, "No encontramos esta compra." y **Volver a Mis compras** (secundario).
 - Volver: a la pantalla anterior; si se llegó con **Ver mi compra** desde Compra confirmada, a la pantalla donde se tocó **Comprar** (nunca al flujo de compra).
 
@@ -147,6 +151,14 @@ Navegación: Ingreso → Explorar (raíz, con BottomNav Explorar/Favoritos). El 
 - AppBar con línea inferior: evento + "{organizador} · Compra #id".
 - Mensajes: propios a la derecha, del organizador a la izquierda, con hora.
 - Compositor: "Escribí tu consulta" + botón enviar.
+- Vacío: "Todavía no hay mensajes — Escribí tu consulta y {organizador} te va a responder acá."
+- Compra inexistente o de otro comprador: AppBar con Volver, "No encontramos esta compra." y **Volver a Mis compras** (secundario).
+- Volver: al Detalle de compra.
+
+### Toast de mensaje nuevo (feature 007)
+- En cualquier pantalla interna de la app de compradores (salvo el chat de esa compra), cuando llega una respuesta del organizador: "Nuevo mensaje de {organizador}" / "{evento} · Compra #{número}". Tocarlo abre el chat.
+- Si llegan de varias compras a la vez: "Tenés N mensajes nuevos" / "Tocá para ver tus compras" (→ Mis compras).
+- Desaparece a los 5 s. Cada mensaje avisa una sola vez; lo que llegó con la app cerrada solo se ve como punto de no leído.
 
 ### 11 · Favoritos
 - Título "Favoritos". Lista de eventos favoritos (título, fecha corta, "Desde $ X", corazón para quitar).
@@ -228,13 +240,16 @@ Dos columnas: formulario + vista previa de 400px.
 > - **Disponibilidad:** un tipo sin cupo (solo en Borrador) muestra únicamente "0 / 0 vendidas", sin "Quedan" ni "Agotada".
 > - **Ventas:** se cargan de a 20, de la más reciente a la más antigua, con **Ver más** (secundario) para las 20 siguientes. Cambiar de chip vuelve a empezar desde las primeras 20. Los contadores de los chips y Recaudado son siempre del total del evento.
 > - **Marcar utilizada:** aparece solo en compras Confirmadas y desde las 00:00 (hora de Argentina) del día del evento, sin límite posterior. Antes de ese día no se muestra. No pide confirmación y no se puede deshacer.
-> - **Consultas del evento** sigue deshabilitado y sin contador, y la tabla no tiene botón de chat, hasta la feature de Consultas.
+> - ~~**Consultas del evento** sigue deshabilitado y sin contador, y la tabla no tiene botón de chat, hasta la feature de Consultas.~~ Resuelto en la feature 007.
+
+> **Consultas (feature 007):** **Consultas del evento** está habilitado y muestra `tag-count` con las no leídas (sin contador si son 0). Cada fila de Ventas tiene un botón ícono de chat ("Consultas de la compra #id") que abre Consultas con esa conversación, aunque no tenga mensajes.
 > - Las compras de ejemplo del seed suman exactamente las vendidas de cada tipo de entrada.
 
 ### 05 · Consultas del evento
 - Volver; "Consultas del evento" + nombre del evento.
 - **Columna izquierda (380px):** lista de conversaciones (solo compras con mensajes): avatar con iniciales del comprador, nombre, hora del último mensaje, "Compra #id · {tipo} × {cantidad}", último mensaje, punto de no leído.
 - **Panel de chat:** cabecera con comprador, "Compra #id · {tipo} × {cantidad} · $ total" y Tag de estado; mensajes (propios del organizador a la derecha); compositor "Responder a {comprador}" + **Enviar**. Abrir una conversación la marca como leída.
+- Feature 007: sin conversación elegida, "Elegí una conversación para ver los mensajes." (entrar no abre ninguna sola). Sin ninguna conversación: "Todavía no hay consultas — Cuando un comprador escriba, vas a verla acá." Una conversación sin mensajes abierta desde Ventas: "Todavía no hay mensajes con {comprador}." Enter envía y Shift+Enter agrega un salto de línea. Evento ajeno: "No encontramos el evento." + link a Mis eventos.
 
 ---
 

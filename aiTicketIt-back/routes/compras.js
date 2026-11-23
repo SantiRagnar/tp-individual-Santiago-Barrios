@@ -4,6 +4,9 @@ import { requiereSesion } from "../middlewares/requiereSesion.js";
 import { validar } from "../middlewares/validar.js";
 import { calificacionSchema } from "../schemas/calificacionSchema.js";
 import { compraSchema } from "../schemas/compraSchema.js";
+import { consultasController } from "../controllers/consultasController.js";
+import { validarQuery } from "../middlewares/validarQuery.js";
+import { consultaQuerySchema, mensajeSchema } from "../schemas/mensajeSchema.js";
 
 /**
  * Compras del comprador con sesión (feature 004, research R1). Se monta en /compradores/compras.
@@ -20,6 +23,10 @@ export function crearRouterCompras() {
   router.post("/:numero/cancelacion", controller.cancelar);
   // Feature 006: calificar una compra Utilizada (specs/006-calificaciones-opiniones/contracts/calificaciones.openapi.yaml).
   router.post("/:numero/calificacion", validar(calificacionSchema), controller.calificar);
+  // Chat de la compra (feature 007).
+  router.get("/:numero/mensajes", validarQuery(consultaQuerySchema), consultasController.mensajesDeComprador);
+  router.post("/:numero/mensajes", validar(mensajeSchema), consultasController.enviarComoComprador);
+  router.put("/:numero/mensajes/lectura", consultasController.marcarLeidaComprador);
 
   return router;
 }
@@ -41,7 +48,7 @@ export function crearRouterCompras() {
  *       enum: [Pendiente de pago, Confirmada, Utilizada, Cancelada, Reembolsada]
  *     Compra:
  *       type: object
- *       required: [numero, estado, cantidad, monto, medioDePago, creadaEn, tipoDeEntrada, evento, diasParaEvento, calificacion, acciones, motivoNoCancelable, motivoNoCalificable]
+ *       required: [numero, estado, cantidad, monto, medioDePago, creadaEn, tipoDeEntrada, evento, diasParaEvento, calificacion, acciones, motivoNoCancelable, motivoNoCalificable, consultaNoLeida]
  *       properties:
  *         numero: { type: string, example: A-1042 }
  *         estado: { $ref: '#/components/schemas/EstadoCompra' }
@@ -102,6 +109,9 @@ export function crearRouterCompras() {
  *           nullable: true
  *           description: Por qué no se puede calificar (feature 006); null si se puede
  *           enum: [YA_CALIFICADA, NO_UTILIZADA, null]
+ *         consultaNoLeida:
+ *           type: boolean
+ *           description: "El chat de la compra tiene una respuesta del organizador sin leer (feature 007, FR-023)"
  *     NuevaCalificacion:
  *       type: object
  *       additionalProperties: false
@@ -297,4 +307,93 @@ export function crearRouterCompras() {
  *                 value: { error: { codigo: COMPRA_YA_CALIFICADA, mensaje: "Esta compra ya fue calificada." } }
  *               noUtilizada:
  *                 value: { error: { codigo: CALIFICACION_NO_PERMITIDA, mensaje: "Solo podés calificar una entrada utilizada." } }
+ */
+
+/**
+ * @openapi
+ * tags:
+ *   - name: Consultas (comprador)
+ *
+ * components:
+ *   schemas:
+ *     Mensaje:
+ *       type: object
+ *       required: [id, autor, texto, enviadoEn]
+ *       properties:
+ *         id: { type: string, example: msj-3 }
+ *         autor: { type: string, enum: [comprador, organizador] }
+ *         texto: { type: string, minLength: 1, maxLength: 1000 }
+ *         enviadoEn: { type: string, format: date-time }
+ *     NuevoMensaje:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [texto]
+ *       properties:
+ *         texto:
+ *           type: string
+ *           description: Se recorta. 1 a 1000 caracteres después de recortar ("Escribí un mensaje" / "El mensaje puede tener hasta 1000 caracteres").
+ *     RespuestaMensaje:
+ *       type: object
+ *       required: [mensaje]
+ *       properties:
+ *         mensaje: { $ref: '#/components/schemas/Mensaje' }
+ *
+ * /compradores/compras/{numero}/mensajes:
+ *   parameters:
+ *     - { name: numero, in: path, required: true, schema: { type: string }, example: A-1042 }
+ *   get:
+ *     tags: [Consultas (comprador)]
+ *     summary: Mensajes del chat de una compra propia, en orden cronológico
+ *     description: >
+ *       Sin `despuesDe` devuelve todos; con `despuesDe` solo los posteriores a ese mensaje (sondeo, FR-021).
+ *       Una compra sin mensajes devuelve []. No marca como leída.
+ *     security: [{ bearer: [] }]
+ *     parameters:
+ *       - { name: despuesDe, in: query, schema: { type: string }, example: msj-3, description: "Id del último mensaje que ya tiene el cliente" }
+ *     responses:
+ *       200:
+ *         description: Mensajes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [mensajes]
+ *               properties:
+ *                 mensajes: { type: array, items: { $ref: '#/components/schemas/Mensaje' } }
+ *       400: { $ref: '#/components/responses/DatosInvalidos' }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404: { $ref: '#/components/responses/CompraNoEncontrada' }
+ *   post:
+ *     tags: [Consultas (comprador)]
+ *     summary: Enviar un mensaje en el chat de una compra propia
+ *     description: Con la compra en cualquier estado (FR-004). El autor es siempre "comprador".
+ *     security: [{ bearer: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/NuevoMensaje' }
+ *           example: { texto: "¿Se puede entrar con cochecito?" }
+ *     responses:
+ *       201:
+ *         description: Mensaje creado
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/RespuestaMensaje' }
+ *       400: { $ref: '#/components/responses/DatosInvalidos' }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404: { $ref: '#/components/responses/CompraNoEncontrada' }
+ *
+ * /compradores/compras/{numero}/mensajes/lectura:
+ *   parameters:
+ *     - { name: numero, in: path, required: true, schema: { type: string }, example: A-1037 }
+ *   put:
+ *     tags: [Consultas (comprador)]
+ *     summary: Marcar el chat de la compra como leído por el comprador (idempotente)
+ *     description: Al abrir el chat y cuando el sondeo trae mensajes nuevos con el chat abierto (FR-022).
+ *     security: [{ bearer: [] }]
+ *     responses:
+ *       204: { description: Marcada como leída }
+ *       401: { $ref: '#/components/responses/SesionInvalida' }
+ *       404: { $ref: '#/components/responses/CompraNoEncontrada' }
  */

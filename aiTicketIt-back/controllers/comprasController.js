@@ -2,7 +2,7 @@ import { aCompraDto } from "../dto/compraDto.js";
 import * as comprasService from "../services/comprasService.js";
 
 /** Traduce HTTP ↔ comprasService. Requiere requiereSesion("comprador") antes (req.sesion). Sin async (research R2). */
-const dto = ({ compra, evento, organizador, ahora }) => aCompraDto(compra, evento, organizador, ahora);
+const dto = ({ compra, evento, organizador, ahora, consultaNoLeida }) => aCompraDto(compra, evento, organizador, ahora, { consultaNoLeida });
 
 export const comprasController = {
   crear(req, res) {

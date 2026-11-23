@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { compradoresSeed, comprasSeed, eventosSeed } from "../../repository/seed.js";
+import { compradoresSeed, comprasSeed, consultasSeed, eventosSeed } from "../../repository/seed.js";
+import { noLeidaPara } from "../../services/reglasConsulta.js";
 
 // Invariantes de specs/005-panel-evento/data-model.md § Seed de compras (research R8, FR-018).
 
@@ -99,5 +100,58 @@ describe("seed de compras", () => {
     assert.equal(contar("Cancelada"), 1);
     assert.equal(contar("Reembolsada"), 1);
     assert.equal(contar("Utilizada"), 0);
+  });
+});
+
+// specs/007-consultas-chat/data-model.md § Seed (FR-018).
+
+describe("seed de consultas (feature 007)", () => {
+  const compraDe = (numero) => comprasSeed.find((c) => c.numero === numero);
+  const consultaDe = (numero) => consultasSeed.find((c) => c.compraNumero === numero);
+  const primeraGenerada = (eventoId, compradorId) =>
+    comprasSeed
+      .filter((c) => c.eventoId === eventoId && c.compradorId === compradorId)
+      .sort((a, b) => (a.numero < b.numero ? -1 : 1))[0];
+
+  it("cada consulta apunta a una compra existente del mismo evento y tiene mensajes", () => {
+    for (const consulta of consultasSeed) {
+      const compra = compraDe(consulta.compraNumero);
+      assert.ok(compra, consulta.compraNumero);
+      assert.equal(consulta.eventoId, compra.eventoId, consulta.compraNumero);
+      assert.ok(consulta.mensajes.length > 0, consulta.compraNumero);
+    }
+  });
+
+  it("ningún mensaje es anterior a su compra ni posterior al 2026-11-08", () => {
+    for (const consulta of consultasSeed) {
+      const creada = new Date(compraDe(consulta.compraNumero).creadaEn).getTime();
+      for (const mensaje of consulta.mensajes) {
+        const enviado = new Date(mensaje.enviadoEn).getTime();
+        assert.ok(enviado >= creada, `${mensaje.id} anterior a ${consulta.compraNumero}`);
+        assert.ok(enviado < REFERENCIA, `${mensaje.id} posterior al 2026-11-08`);
+      }
+    }
+  });
+
+  it("A-1042 no leída para el organizador; A-1037 no leída para Sofía", () => {
+    assert.equal(noLeidaPara(consultaDe("A-1042"), "organizador"), true);
+    assert.equal(noLeidaPara(consultaDe("A-1042"), "comprador"), false);
+    assert.equal(noLeidaPara(consultaDe("A-1037"), "comprador"), true);
+    assert.equal(noLeidaPara(consultaDe("A-1037"), "organizador"), false);
+  });
+
+  it("Hamlet de cmp-6 leída por los dos y Bodas de cmp-7 no leída para el organizador", () => {
+    const hamlet = consultaDe(primeraGenerada("evt-1", "cmp-6").numero);
+    const bodas = consultaDe(primeraGenerada("evt-3", "cmp-7").numero);
+    assert.ok(hamlet && bodas);
+    assert.equal(noLeidaPara(hamlet, "organizador"), false);
+    assert.equal(noLeidaPara(hamlet, "comprador"), false);
+    assert.equal(noLeidaPara(bodas, "organizador"), true);
+  });
+
+  it("en evt-1 el último mensaje de A-1042 es más reciente que el de cmp-6", () => {
+    const hamlet = consultaDe(primeraGenerada("evt-1", "cmp-6").numero);
+    const ultimo = (c) => new Date(c.mensajes.at(-1).enviadoEn).getTime();
+    assert.ok(ultimo(consultaDe("A-1042")) > ultimo(hamlet));
   });
 });

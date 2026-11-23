@@ -2,6 +2,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Compra } from '@/api/compras';
 import { ImagenDeEvento } from '@/components/ds/ImagenEvento';
+import { PuntoNoLeido } from '@/components/ds/ListaConversaciones';
 import { TagCompra } from '@/components/ds/Tag';
 import { cuentaRegresiva, entradas, estrellas, fechaCorta } from '@/lib/formato';
 import { color, radius, shadow, space, tinte, type } from '@/theme/tokens';
@@ -23,7 +24,7 @@ export function PurchaseCard({ compra, onPress, onCalificar }: { compra: Compra;
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${compra.evento.nombre}, ${compra.estado}`}
+      accessibilityLabel={`${compra.evento.nombre}, ${compra.estado}${compra.consultaNoLeida ? ', tenés mensajes sin leer' : ''}`}
       style={({ pressed, hovered, focused }: { pressed: boolean; hovered?: boolean; focused?: boolean }) => [
         styles.tarjeta,
         hovered && { backgroundColor: tinte.textoHover },
@@ -42,6 +43,12 @@ export function PurchaseCard({ compra, onPress, onCalificar }: { compra: Compra;
           <ImagenDeEvento imagenUrl={compra.evento.imagenUrl} alto={ALTO_IMAGEN} />
         </View>
       </View>
+      {/* Respuesta sin leer (feature 007, FR-023): fuera de la imagen, así no hereda su opacidad. */}
+      {compra.consultaNoLeida ? (
+        <View style={styles.punto}>
+          <PuntoNoLeido />
+        </View>
+      ) : null}
       <View style={styles.pie}>
         <TagCompra estado={compra.estado} />
         {compra.diasParaEvento !== null ? (
@@ -75,5 +82,6 @@ const styles = StyleSheet.create({
   textos: { flex: 1, gap: space.s1 },
   imagen: { width: ANCHO_IMAGEN, borderRadius: radius.sm, overflow: 'hidden' },
   pie: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.s4 },
+  punto: { position: 'absolute', top: space.s3, right: space.s3 },
   foco: { outlineWidth: 2, outlineStyle: 'solid', outlineColor: color.accent, outlineOffset: 2 },
 });

@@ -54,6 +54,7 @@ describe("aCompraDto", () => {
       acciones: { completarPago: false, cancelar: true, calificar: false },
       motivoNoCancelable: null,
       motivoNoCalificable: "NO_UTILIZADA",
+      consultaNoLeida: false,
     });
   });
 
@@ -100,5 +101,13 @@ describe("aCompraDto", () => {
     const confirmada = aCompraDto(compra(), evento(), ORGANIZADOR, HOY);
     assert.equal(confirmada.acciones.calificar, false);
     assert.equal(confirmada.motivoNoCalificable, "NO_UTILIZADA");
+  });
+});
+
+// specs/007-consultas-chat (FR-023, research R6): el DTO recibe `consultaNoLeida` ya calculado por el servicio.
+describe("aCompraDto · consultaNoLeida (feature 007)", () => {
+  it("es false por defecto y refleja el valor que le pasan", () => {
+    assert.equal(aCompraDto(compra(), evento(), ORGANIZADOR, HOY).consultaNoLeida, false);
+    assert.equal(aCompraDto(compra(), evento(), ORGANIZADOR, HOY, { consultaNoLeida: true }).consultaNoLeida, true);
   });
 });

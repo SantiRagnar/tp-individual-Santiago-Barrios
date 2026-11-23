@@ -10,10 +10,12 @@ import {
 } from "../errors/ErrorDeDominio.js";
 import { Compra } from "../models/Compra.js";
 import * as comprasRepository from "../repository/comprasRepository.js";
+import * as consultasRepository from "../repository/consultasRepository.js";
 import * as eventosRepository from "../repository/eventosRepository.js";
 import * as organizadoresRepository from "../repository/organizadoresRepository.js";
 import { motivoNoCalificable, puedeCalificar } from "./reglasCalificacion.js";
 import { estadoTrasCancelar, motivoNoCancelable, puedeCompletarPago } from "./reglasCompra.js";
+import { noLeidaPara } from "./reglasConsulta.js";
 import { ahora } from "./reloj.js";
 import { esVisibleParaCompradores } from "./visibilidadEvento.js";
 
@@ -28,11 +30,13 @@ import { esVisibleParaCompradores } from "./visibilidadEvento.js";
 function conContexto(compra, momento) {
   const evento = eventosRepository.buscarPorId(compra.eventoId);
   const organizador = organizadoresRepository.buscarPorId(evento.organizadorId);
-  return { compra, evento, organizador, ahora: momento };
+  // Punto de no leído en Mis compras y en el Detalle (feature 007, FR-023).
+  const consultaNoLeida = noLeidaPara(consultasRepository.buscar(compra.numero), "comprador");
+  return { compra, evento, organizador, ahora: momento, consultaNoLeida };
 }
 
 /** Una compra ajena responde igual que una inexistente (FR-021, SC-004). */
-function compraDe(compradorId, numero) {
+export function compraDe(compradorId, numero) {
   const compra = comprasRepository.buscarPorNumero(numero);
   if (!compra || compra.compradorId !== compradorId) throw new CompraNoEncontrada();
   return compra;

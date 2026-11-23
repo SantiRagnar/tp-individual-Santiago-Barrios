@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { Button } from '@/components/ds/Button';
 import { EstadoVacio } from '@/components/ds/EstadoVacio';
 import { SIN_CONEXION } from '@/components/ds/PantallaDeAviso';
 import { PurchaseCard } from '@/components/ds/PurchaseCard';
+import { useAvisosDeConsultas } from '@/consultas/AvisosDeConsultasProvider';
 import { useSesion } from '@/sesion/SesionProvider';
 import { color, space, type } from '@/theme/tokens';
 
@@ -42,6 +43,15 @@ export default function MisCompras() {
       };
     }, [cargar]),
   );
+
+  // Una respuesta nueva del organizador recarga la lista, así aparece el punto (feature 007, FR-023).
+  const { version } = useAvisosDeConsultas();
+  const versionVista = useRef(version);
+  useEffect(() => {
+    if (versionVista.current === version) return;
+    versionVista.current = version;
+    void cargar();
+  }, [version, cargar]);
 
   const abrir = (numero: string) => router.push({ pathname: '/compras/[numero]', params: { numero } });
   /** Feature 006: "Calificá tu experiencia" abre Calificar experiencia; al enviar, la reemplaza el Detalle. */
