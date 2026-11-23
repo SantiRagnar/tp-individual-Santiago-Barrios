@@ -55,8 +55,8 @@ describe("resenasService.pagina", () => {
   });
 
   it("un organizador sin reseñas: lista vacía y total 0", () => {
-    organizadoresRepository.agregar({ id: "org-4", nombre: "Teatro Nuevo", email: "hola@teatronuevo.com", contrasenaHash: "scrypt$00$00" });
-    assert.deepEqual(resenasService.pagina("org-4", null), { resenas: [], total: 0, siguiente: null });
+    organizadoresRepository.agregar({ id: "org-nuevo", nombre: "Teatro Nuevo", email: "hola@teatronuevo.com", contrasenaHash: "scrypt$00$00" });
+    assert.deepEqual(resenasService.pagina("org-nuevo", null), { resenas: [], total: 0, siguiente: null });
   });
 
   it("organizador inexistente → OrganizadorNoEncontrado", () => {
